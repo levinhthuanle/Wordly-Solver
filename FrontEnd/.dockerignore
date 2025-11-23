@@ -1,0 +1,8 @@
+node_modules
+.next
+.vscode
+.DS_Store
+npm-debug.log
+.env
+.git
+coverage
