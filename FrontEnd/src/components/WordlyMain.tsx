@@ -28,7 +28,12 @@ export default function WordlyMain() {
     answer,
   } = useGameController();
 
-  const { runAgent, isRunning: isAgentRunning } = useAgentSolver();
+  const { 
+    runAgent, 
+    isRunning: isAgentRunning,
+    selectedAlgorithm,
+    setSelectedAlgorithm 
+  } = useAgentSolver();
   const isGameOver = useGameStore((state) => state.isGameOver);
 
   const [showStats, setShowStats] = useState(false);
@@ -56,6 +61,8 @@ export default function WordlyMain() {
           onRunAgent={runAgent}
           isAgentRunning={isAgentRunning}
           isGameOver={isGameOver}
+          selectedAlgorithm={selectedAlgorithm}
+          onAlgorithmChange={setSelectedAlgorithm}
         />
 
         <div className="mt-6 w-full max-w-md">

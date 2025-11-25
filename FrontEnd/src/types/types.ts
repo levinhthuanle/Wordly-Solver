@@ -3,6 +3,8 @@ export type LetterState = "correct" | "present" | "absent" | "unused";
 
 export type KeyboardState = Record<string, Exclude<LetterState, "unused"> | undefined>;
 
+export type AlgorithmType = 'dfs' | 'hill-climbing' | 'simulated-annealing';
+
 export interface WordEntry {
   word: string;
 }

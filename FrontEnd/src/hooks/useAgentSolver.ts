@@ -2,14 +2,15 @@
 
 import { useState, useRef } from "react";
 import { useGameStore } from "@/stores/game-store";
-import { WordlyAgentSolver } from "@/utils/agent-solver";
+import { createAgent, BaseAgent, AlgorithmType } from "@/algorithms";
 import { loadWords } from "@/utils/word-loader";
 import { backendAPI } from "@/utils/backend-api";
 
 export function useAgentSolver() {
   const [isRunning, setIsRunning] = useState(false);
   const [useBackend, setUseBackend] = useState(true);
-  const agentRef = useRef<WordlyAgentSolver | null>(null);
+  const [selectedAlgorithm, setSelectedAlgorithm] = useState<AlgorithmType>('dfs');
+  const agentRef = useRef<BaseAgent | null>(null);
   
   const { 
     answer, 
@@ -65,10 +66,12 @@ export function useAgentSolver() {
       const words = await loadWords();
       
       if (!agentRef.current) {
-        agentRef.current = new WordlyAgentSolver(words);
+        agentRef.current = createAgent(words, selectedAlgorithm);
       } else {
         agentRef.current.reset();
       }
+
+      console.log(`🤖 Using ${selectedAlgorithm.toUpperCase()} algorithm`);
 
       let attempts = 0;
       const maxAttempts = 6;
@@ -76,7 +79,7 @@ export function useAgentSolver() {
       while (attempts < maxAttempts && !useGameStore.getState().isGameOver) {
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        const guess = await agentRef.current.solveStep(answer);
+        const guess = await agentRef.current!.solveStep(answer);
         
         if (!guess) {
           console.error("Agent couldn't find a valid guess");
@@ -138,5 +141,7 @@ export function useAgentSolver() {
     isAgentPlaying,
     useBackend,
     toggleBackend,
+    selectedAlgorithm,
+    setSelectedAlgorithm,
   };
 }
