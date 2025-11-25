@@ -1,5 +1,16 @@
-version: '3.8'
 services:
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    networks:
+      - wordly-network
+
   frontend:
     build:
       context: ./FrontEnd
@@ -8,4 +19,13 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
     restart: unless-stopped
+    networks:
+      - wordly-network
+
+networks:
+  wordly-network:
+    driver: bridge
