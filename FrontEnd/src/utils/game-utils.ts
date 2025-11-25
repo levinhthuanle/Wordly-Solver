@@ -1,42 +1,43 @@
 import { GameStoreState } from "@/stores/game-store";
-import { wordList } from "@/constants/wordlist";
 import { LetterState, KeyboardState } from "@/types/types";
+import { loadWords, getRandomWordFromList, getDailyWordFromList } from "./word-loader";
 
 export function normalize(word: string): string {
   return word.trim().toUpperCase();
 }
 
-export function computeDailyIndex(date: Date): number {
-  // Deterministic index based on UTC date
-  const epoch = Date.UTC(2021, 5, 19); // Wordle epoch-ish (June 19, 2021)
-  const dayMs = 24 * 60 * 60 * 1000;
-  const today = Date.UTC(
-    date.getUTCFullYear(),
-    date.getUTCMonth(),
-    date.getUTCDate()
-  );
-  const day = Math.floor((today - epoch) / dayMs);
-  return ((day % wordList.length) + wordList.length) % wordList.length;
+let wordsCache: string[] = [];
+
+// Initialize word list
+export async function initializeWordList(): Promise<void> {
+  if (wordsCache.length === 0) {
+    wordsCache = await loadWords();
+  }
 }
 
-export function getDailyAnswer(): { answer: string; id: string } {
+export async function getDailyAnswer(): Promise<{ answer: string; id: string }> {
+  await initializeWordList();
   const now = new Date();
-  const index = computeDailyIndex(now);
-  const ans = normalize(wordList[index].word);
+  const ans = getDailyWordFromList(wordsCache, now);
   const id = now.toISOString().slice(0, 10); // YYYY-MM-DD
   return { answer: ans, id };
 }
 
-export function getRandomAnswer(): { answer: string; id: string } {
-  const index = Math.floor(Math.random() * wordList.length);
-  const ans = normalize(wordList[index].word);
+export async function getRandomAnswer(): Promise<{ answer: string; id: string }> {
+  await initializeWordList();
+  const ans = getRandomWordFromList(wordsCache);
   const id = `rand-${Date.now()}`;
   return { answer: ans, id };
 }
 
 export function isValidWord(word: string): boolean {
   const upper = normalize(word);
-  return wordList.some((w) => normalize(w.word) === upper);
+  // Check if word exists in words.txt
+  if (wordsCache.length === 0) {
+    // If cache not loaded yet, allow the word (will be checked after load)
+    return true;
+  }
+  return wordsCache.some((w) => w === upper);
 }
 
 export function evaluateGuess(answer: string, guess: string): LetterState[] {

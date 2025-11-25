@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useGameStore } from "@/stores/game-store";
 import { useGameStats } from "./useGameStats";
+import { initializeWordList } from "@/utils/game-utils";
 
 export function useGameController() {
   const {
@@ -16,6 +17,11 @@ export function useGameController() {
 
   // Handle stats persistence
   useGameStats();
+
+  // Preload word list on mount
+  useEffect(() => {
+    initializeWordList();
+  }, []);
 
   // Handle keyboard input
   useEffect(() => {

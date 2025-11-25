@@ -9,6 +9,7 @@ RUN npm install
 
 COPY . .
 RUN mkdir -p public
+RUN if [ -f words.txt ]; then cp words.txt public/words.txt; fi
 RUN npm run build
 
 

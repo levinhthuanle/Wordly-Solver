@@ -8,8 +8,10 @@ import StatsModal from "@/components/StatsModal";
 import { LAYOUT } from "@/constants/constants";
 import dynamic from "next/dynamic";
 import { useGameController } from "@/hooks/useGameController";
+import { useAgentSolver } from "@/hooks/useAgentSolver";
 import { AttemptsCounter } from "@/components/AttemptsCounter";
 import { GameControls } from "@/components/GameControls";
+import { useGameStore } from "@/stores/game-store";
 
 const OnscreenKeyboard = dynamic(
   () => import("@/components/keyboard/OnscreenKeyboard"),
@@ -25,6 +27,9 @@ export default function WordlyMain() {
     isWinner,
     answer,
   } = useGameController();
+
+  const { runAgent, isRunning: isAgentRunning } = useAgentSolver();
+  const isGameOver = useGameStore((state) => state.isGameOver);
 
   const [showStats, setShowStats] = useState(false);
 
@@ -46,7 +51,12 @@ export default function WordlyMain() {
         </div>
 
         {/* Action buttons with beautiful styling */}
-        <GameControls onShowStats={() => setShowStats(true)} />
+        <GameControls 
+          onShowStats={() => setShowStats(true)} 
+          onRunAgent={runAgent}
+          isAgentRunning={isAgentRunning}
+          isGameOver={isGameOver}
+        />
 
         <div className="mt-6 w-full max-w-md">
           <OnscreenKeyboard />
