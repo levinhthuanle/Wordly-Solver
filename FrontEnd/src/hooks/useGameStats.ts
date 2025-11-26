@@ -1,26 +1,14 @@
 import { useEffect } from "react";
 import { useGameStore } from "@/stores/game-store";
-import { backendAPI } from "@/utils/backend-api";
 
 export function useGameStats() {
-  const { isGameOver, isWinner, guesses, score, answer, evaluations } = useGameStore();
+  const { isGameOver, isWinner, guesses, score, answer } = useGameStore();
 
   useEffect(() => {
     if (isGameOver) {
-      const won = isWinner;
       const numGuesses = guesses.length;
 
-      // Save to backend history
-      backendAPI.saveGameHistory(
-        answer,
-        won,
-        numGuesses,
-        score,
-        guesses,
-        evaluations
-      ).catch((err) => console.error("Failed to save to backend history:", err));
-
-      // Also keep localStorage backup for offline access
+      // Save to localStorage (backend no longer stores history)
       try {
         const existing = JSON.parse(
           localStorage.getItem("wordly-scores") || "[]"
@@ -36,6 +24,6 @@ export function useGameStats() {
         console.error("Failed to save score to localStorage:", err);
       }
     }
-  }, [isGameOver, isWinner, guesses.length, score, answer, evaluations]);
+  }, [isGameOver, isWinner, guesses.length, score, answer]);
 }
 

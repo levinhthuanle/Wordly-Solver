@@ -1,37 +1,82 @@
 # Python
-.venv/
-.env
 __pycache__/
 *.pyc
 *.py[cod]
 *$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Node
+# UV (Python package manager)
+.uv/
+
+# Node.js / Next.js
 node_modules/
 .next/
 .turbo/
 out/
 build/
-dist/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
 
-# IDE
+# IDE / Editor
 .vscode/
 .idea/
 *.swp
 *.swo
+*.swn
+.history/
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# Environment
+# Environment variables
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Legacy files (do not restore)
+Backend/main.py.backup
+Backend/Requirements.txt
+Backend/words.txt
+Backend/convert_wordlist.py
+Backend/history/
+FrontEnd/src/utils/backend-api.ts
+
+# Documentation (keep only essential)
+CLEANUP.md
+DEPLOYMENT_STATUS.md
+FINAL_STATUS.md
+REQUIREMENTS_STATUS.md
+100_PERCENT_COMPLETE.md
+
+# Keep these files
+!Backend/backend/data/wordlist.json
+!FrontEnd/public/words.txt
+!Backend/uv.lock

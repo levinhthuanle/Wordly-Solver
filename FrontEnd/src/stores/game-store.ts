@@ -32,9 +32,9 @@ export interface GameStoreState {
   solutionId: string; // YYYY-MM-DD for daily or random seed id
   keyboard: KeyboardState; // letter -> best-known state
   score: number; // simple cumulative score like existing app
-
-  // Agent
-  isAgentPlaying: boolean;
+  
+  // UI State
+  isKeyboardVisible: boolean;
   
   // Actions
   startNewGame: (mode?: GameMode) => void;
@@ -42,9 +42,8 @@ export interface GameStoreState {
   addLetter: (letter: string) => void;
   removeLetter: () => void;
   submitGuess: () => void;
-  submitAgentGuess: (guess: string) => void;
   resetInvalid: () => void;
-  setAgentPlaying: (isPlaying: boolean) => void;
+  setKeyboardVisible: (visible: boolean) => void;
 }
 
 export const useGameStore = create<GameStoreState>()(
@@ -63,7 +62,7 @@ export const useGameStore = create<GameStoreState>()(
       solutionId: "",
       keyboard: {},
       score: 0,
-      isAgentPlaying: false,
+      isKeyboardVisible: true,
 
       startNewGame: async (mode) => {
         const desiredMode = mode ?? get().mode ?? "random";
@@ -116,10 +115,11 @@ export const useGameStore = create<GameStoreState>()(
 
         const guess = normalize(currentGuess);
         
-        // Validate that the word exists in words.txt
-        if (!isValidWord(guess)) {
-          set({ invalidGuess: true });
-          return;
+        // Relaxed validation: only check word exists (warn but allow)
+        // This allows players to try any 5-letter combination
+        const isValid = isValidWord(guess);
+        if (!isValid) {
+          console.warn(`⚠️ "${guess}" is not in the dictionary, but proceeding...`);
         }
 
         const evals = evaluateGuess(answer, guess);
@@ -171,39 +171,7 @@ export const useGameStore = create<GameStoreState>()(
 
       resetInvalid: () => set({ invalidGuess: false }),
 
-      submitAgentGuess: (guess: string) => {
-        const { answer, guesses, isGameOver } = get();
-        if (isGameOver) return;
-
-        const normalizedGuess = normalize(guess);
-        const evals = evaluateGuess(answer, normalizedGuess);
-        const nextGuesses = [...guesses, normalizedGuess];
-        const nextEvaluations = [...get().evaluations, evals];
-        const isWinner = evals.every((s) => s === "correct");
-        const isLast = nextGuesses.length >= GAME.MAX_ATTEMPTS;
-        const gameOver = isWinner || isLast;
-
-        set({
-          guesses: nextGuesses,
-          evaluations: nextEvaluations,
-          currentGuess: "",
-          currentRow: get().currentRow + 1,
-          isRevealing: true,
-          isWinner,
-          isGameOver: gameOver,
-          keyboard: mergeKeyboardState(get().keyboard, normalizedGuess, evals),
-        });
-
-        // End reveal after animation duration
-        const revealMs = (GAME.REVEAL_TIME_MS || 350) * GAME.WORD_LENGTH;
-        setTimeout(() => {
-          if (get().guesses.length === nextGuesses.length) {
-            set({ isRevealing: false });
-          }
-        }, revealMs);
-      },
-
-      setAgentPlaying: (isPlaying: boolean) => set({ isAgentPlaying: isPlaying }),
+      setKeyboardVisible: (visible: boolean) => set({ isKeyboardVisible: visible }),
     }),
     {
       name: "wordly-game", // persist basic game meta and score, not guesses

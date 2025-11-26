@@ -1,5 +1,5 @@
 // Utility to load words from backend API
-import { backendAPI } from './backend-api';
+import { solverAPI } from './api-utils';
 
 let cachedWords: string[] = [];
 let loadingPromise: Promise<string[]> | null = null;
@@ -17,18 +17,13 @@ export async function loadWords(): Promise<string[]> {
   loadingPromise = (async () => {
     try {
       // Try to load from backend first
-      const isBackendHealthy = await backendAPI.healthCheck();
+      const isBackendHealthy = await solverAPI.healthCheck();
       
       if (isBackendHealthy) {
         console.log('📚 Loading word list from backend...');
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/words/all`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          cachedWords = data.words.map((word: string) => word.trim().toUpperCase());
-          console.log(`✅ Loaded ${cachedWords.length} words from backend`);
-          return cachedWords;
-        }
+        cachedWords = await solverAPI.getAllWords();
+        console.log(`✅ Loaded ${cachedWords.length} words from backend`);
+        return cachedWords;
       }
       
       // Fallback: load from local file if backend fails

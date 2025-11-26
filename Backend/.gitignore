@@ -2,15 +2,22 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
 
-# Storage data
+# Storage data (but keep wordlist.json)
 storage/
-*.json
+game_history.json
 
 # Virtual environments
 venv/
 env/
 ENV/
+.venv/
+
+# uv
+.uv/
+uv.lock
 
 # IDE
 .vscode/
@@ -24,3 +31,13 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Legacy files
+words.txt
+main.py
+Requirements.txt

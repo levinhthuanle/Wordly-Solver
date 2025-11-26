@@ -8,9 +8,8 @@ import StatsModal from "@/components/StatsModal";
 import { LAYOUT } from "@/constants/constants";
 import dynamic from "next/dynamic";
 import { useGameController } from "@/hooks/useGameController";
-import { useAgentSolver } from "@/hooks/useAgentSolver";
+import { AISuggestionPanel } from "@/components/AISuggestionPanel";
 import { AttemptsCounter } from "@/components/AttemptsCounter";
-import { GameControls } from "@/components/GameControls";
 import { useGameStore } from "@/stores/game-store";
 
 const OnscreenKeyboard = dynamic(
@@ -28,13 +27,8 @@ export default function WordlyMain() {
     answer,
   } = useGameController();
 
-  const { 
-    runAgent, 
-    isRunning: isAgentRunning,
-    selectedAlgorithm,
-    setSelectedAlgorithm 
-  } = useAgentSolver();
   const isGameOver = useGameStore((state) => state.isGameOver);
+  const isKeyboardVisible = useGameStore((state) => state.isKeyboardVisible);
 
   const [showStats, setShowStats] = useState(false);
 
@@ -42,7 +36,7 @@ export default function WordlyMain() {
     <div className={LAYOUT.container}>
       {/* Elegant header card */}
       <div className="card mb-8">
-        <GameHeader />
+        <GameHeader onShowStats={() => setShowStats(true)} />
       </div>
 
       {/* Main game area */}
@@ -55,19 +49,14 @@ export default function WordlyMain() {
           <AttemptsCounter attempts={guesses.length} maxAttempts={6} />
         </div>
 
-        {/* Action buttons with beautiful styling */}
-        <GameControls 
-          onShowStats={() => setShowStats(true)} 
-          onRunAgent={runAgent}
-          isAgentRunning={isAgentRunning}
-          isGameOver={isGameOver}
-          selectedAlgorithm={selectedAlgorithm}
-          onAlgorithmChange={setSelectedAlgorithm}
-        />
+        {/* AI Suggestion Panel */}
+        <AISuggestionPanel />
 
-        <div className="mt-6 w-full max-w-md">
-          <OnscreenKeyboard />
-        </div>
+        {isKeyboardVisible && (
+          <div className="mt-6 w-full max-w-md">
+            <OnscreenKeyboard />
+          </div>
+        )}
       </main>
 
       <GameOverModal
