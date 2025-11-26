@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Storage data
+storage/
+*.json
+
 # Virtual environments
 venv/
 env/

@@ -1,16 +1,13 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useGameStore } from "@/stores/game-store";
-import { createAgent, BaseAgent, AlgorithmType } from "@/algorithms";
-import { loadWords } from "@/utils/word-loader";
+import { AlgorithmType } from "@/types/types";
 import { backendAPI } from "@/utils/backend-api";
 
 export function useAgentSolver() {
   const [isRunning, setIsRunning] = useState(false);
-  const [useBackend, setUseBackend] = useState(true);
   const [selectedAlgorithm, setSelectedAlgorithm] = useState<AlgorithmType>('dfs');
-  const agentRef = useRef<BaseAgent | null>(null);
   
   const { 
     answer, 
@@ -18,87 +15,7 @@ export function useAgentSolver() {
     submitAgentGuess, 
     setAgentPlaying,
     isAgentPlaying,
-    guesses,
-    evaluations 
   } = useGameStore();
-
-  const runAgentBackend = async () => {
-    try {
-      let attempts = 0;
-      const maxAttempts = 6;
-
-      while (attempts < maxAttempts && !useGameStore.getState().isGameOver) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        const currentGuesses = useGameStore.getState().guesses;
-        const currentEvaluations = useGameStore.getState().evaluations;
-
-        // Call backend API
-        const result = await backendAPI.solveNextGuess(
-          currentGuesses,
-          currentEvaluations
-        );
-
-        if (!result.guess) {
-          console.error("Backend couldn't find a valid guess");
-          break;
-        }
-
-        console.log(`🤖 Agent guess: ${result.guess} (confidence: ${(result.confidence * 100).toFixed(1)}%, ${result.remaining_words} words left)`);
-
-        submitAgentGuess(result.guess);
-        attempts++;
-
-        if (useGameStore.getState().isWinner) {
-          break;
-        }
-      }
-    } catch (error) {
-      console.error("Backend agent error:", error);
-      // Fallback to client-side solver
-      console.log("Falling back to client-side solver...");
-      await runAgentClientSide();
-    }
-  };
-
-  const runAgentClientSide = async () => {
-    try {
-      const words = await loadWords();
-      
-      if (!agentRef.current) {
-        agentRef.current = createAgent(words, selectedAlgorithm);
-      } else {
-        agentRef.current.reset();
-      }
-
-      console.log(`🤖 Using ${selectedAlgorithm.toUpperCase()} algorithm`);
-
-      let attempts = 0;
-      const maxAttempts = 6;
-
-      while (attempts < maxAttempts && !useGameStore.getState().isGameOver) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        const guess = await agentRef.current!.solveStep(answer);
-        
-        if (!guess) {
-          console.error("Agent couldn't find a valid guess");
-          break;
-        }
-
-        console.log(`🤖 Agent guess (client-side): ${guess}`);
-
-        submitAgentGuess(guess);
-        attempts++;
-
-        if (useGameStore.getState().isWinner) {
-          break;
-        }
-      }
-    } catch (error) {
-      console.error("Client-side agent error:", error);
-    }
-  };
 
   const runAgent = async () => {
     if (isGameOver || isRunning) return;
@@ -110,13 +27,43 @@ export function useAgentSolver() {
       // Check if backend is available
       const isBackendHealthy = await backendAPI.healthCheck();
       
-      if (isBackendHealthy && useBackend) {
-        console.log("🚀 Using backend solver");
-        await runAgentBackend();
-      } else {
-        console.log("💻 Using client-side solver");
-        await runAgentClientSide();
+      if (!isBackendHealthy) {
+        console.error("❌ Backend is not available");
+        setIsRunning(false);
+        setAgentPlaying(false);
+        return;
       }
+
+      console.log(`🚀 Running agent with ${selectedAlgorithm.toUpperCase()} algorithm`);
+      
+      // Call backend to run full agent game
+      const result = await backendAPI.runAgentGame(answer, selectedAlgorithm, 6);
+      
+      console.log(`📊 Agent result: ${result.message}`);
+      
+      // Submit each guess with delay for animation
+      for (let i = 0; i < result.guesses.length; i++) {
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        
+        const guess = result.guesses[i];
+        console.log(`🤖 Agent guess ${i + 1}: ${guess}`);
+        
+        submitAgentGuess(guess);
+        
+        // Check if game is already over
+        if (useGameStore.getState().isGameOver) {
+          break;
+        }
+      }
+      
+      if (result.success) {
+        console.log(`✅ Agent solved in ${result.attempts} attempts!`);
+      } else {
+        console.log(`❌ Agent failed to solve`);
+      }
+      
     } catch (error) {
       console.error("Agent error:", error);
     } finally {
@@ -130,17 +77,11 @@ export function useAgentSolver() {
     setAgentPlaying(false);
   };
 
-  const toggleBackend = () => {
-    setUseBackend(!useBackend);
-  };
-
   return {
     runAgent,
     stopAgent,
     isRunning,
     isAgentPlaying,
-    useBackend,
-    toggleBackend,
     selectedAlgorithm,
     setSelectedAlgorithm,
   };

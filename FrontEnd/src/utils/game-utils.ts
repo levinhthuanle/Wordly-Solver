@@ -32,12 +32,17 @@ export async function getRandomAnswer(): Promise<{ answer: string; id: string }>
 
 export function isValidWord(word: string): boolean {
   const upper = normalize(word);
-  // Check if word exists in words.txt
+  // Check if word exists in word list
   if (wordsCache.length === 0) {
-    // If cache not loaded yet, allow the word (will be checked after load)
-    return true;
+    // If cache not loaded yet, don't allow the word
+    console.warn('⚠️ Word list not loaded yet, rejecting word:', upper);
+    return false;
   }
-  return wordsCache.some((w) => w === upper);
+  const isValid = wordsCache.includes(upper);
+  if (!isValid) {
+    console.log(`❌ Invalid word: "${upper}" not in dictionary`);
+  }
+  return isValid;
 }
 
 export function evaluateGuess(answer: string, guess: string): LetterState[] {

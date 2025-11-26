@@ -8,8 +8,9 @@ RUN pip install --no-cache-dir -r Requirements.txt
 
 # Copy application files
 COPY main.py .
-COPY agent_solver.py .
 COPY words.txt .
+COPY algorithms/ ./algorithms/
+COPY history/ ./history/
 
 # Expose port
 EXPOSE 8000

@@ -1,427 +1,672 @@
 # Wordly-Solver
 
-A Wordle-style word guessing game built with Next.js (Frontend) and FastAPI (Backend).
+Game Wordle với AI Agent tích hợp 3 thuật toán: DFS, Hill Climbing, và Simulated Annealing.
 
-## Features
+## 🎯 Tính năng
 
-- 🎮 Random word selection from 14,855+ words
-- 🎯 Daily challenge mode
-- 🤖 AI Agent Solver with **3 algorithms**: DFS, Hill Climbing, Simulated Annealing
-- 📊 Statistics tracking
-- ⌨️ Keyboard support
-- 🎨 Beautiful UI with animations
-- 🔌 Backend API for word validation and agent solving
-- 🔧 **Modular algorithm architecture** - Easy to add new solving algorithms
+- 🎮 Game Wordle với 14,855+ từ tiếng Anh
+- 🤖 **AI Agent với 3 thuật toán** (DFS, Hill Climbing, Simulated Annealing)
+- 📊 Theo dõi lịch sử và thống kê trò chơi
+- ⌨️ Hỗ trợ bàn phím
+- 🎨 Giao diện đẹp với animation
+- 🐳 Docker deployment sẵn sàng
 
-## Architecture
+## 🏗️ Kiến trúc
 
-### Frontend (Next.js)
-- React 19 + TypeScript
-- Zustand for state management
-- Tailwind CSS for styling
-- Client-side game logic
-- Agent solver (with backend fallback)
+```
+Wordly-Solver/
+├── Backend/                    # Python FastAPI server
+│   ├── algorithms/            # ⭐ Thuật toán AI (Python)
+│   │   ├── base_agent.py     # Abstract class cho tất cả thuật toán
+│   │   ├── dfs_algorithm.py  # DFS algorithm
+│   │   ├── hill_climbing_algorithm.py
+│   │   └── simulated_annealing_algorithm.py
+│   ├── history/              # Lưu trữ lịch sử game
+│   │   └── game_history.py   # JSON storage cho game history
+│   ├── main.py               # FastAPI endpoints
+│   └── words.txt             # Danh sách 14,855 từ
+│
+└── FrontEnd/                  # Next.js UI
+    └── src/
+        ├── components/        # React components
+        ├── hooks/            # Game logic hooks
+        └── utils/            # Utilities & API client
+```
 
-### Backend (FastAPI)
-- Python 3.11 + FastAPI
-- DFS-based agent solver
-- Word validation API
-- Health monitoring
-- CORS enabled
+### Phân chia trách nhiệm
 
-## Word List
+**Backend (Python)**
+- ✅ Tất cả logic thuật toán AI
+- ✅ Lưu trữ và truy vấn lịch sử game
+- ✅ Validation từ
+- ✅ API endpoints
 
-The game uses `words.txt` which contains over 14,855 five-letter words.
+**Frontend (Next.js/TypeScript)**
+- ✅ Giao diện người dùng
+- ✅ Game state management (Zustand)
+- ✅ API calls tới Backend
+- ✅ Chỉ hiển thị, không có logic giải Wordle
 
-## How to Run
+## 🚀 Chạy dự án
 
-### Method 1: Docker Compose (Full Stack - Recommended)
+### Yêu cầu
+- Docker Desktop (khuyến nghị)
+- Hoặc: Python 3.11+ và Node.js 18+
+
+### Cách 1: Docker Compose (Khuyến nghị)
 
 ```bash
-# Make sure Docker Desktop is running
+# Khởi động cả Frontend và Backend
 docker-compose up --build
 ```
 
-**Services:**
+**Truy cập:**
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
 - API Docs: http://localhost:8000/docs
 
-### Method 2: Development Mode
+### Cách 2: Development Mode
 
-#### Backend:
+**Backend:**
 ```bash
 cd Backend
 pip install -r Requirements.txt
-python main.py
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
-Backend runs at: http://localhost:8000
 
-#### Frontend:
+**Frontend:**
 ```bash
 cd FrontEnd
 npm install
 npm run dev
 ```
-Frontend runs at: http://localhost:3000
 
-## API Endpoints
+## 🤖 Hướng dẫn phát triển Thuật toán
 
-### Backend API
+### Kiến trúc thuật toán
+
+Tất cả thuật toán đều nằm trong `Backend/algorithms/` và kế thừa từ `BaseAgent`:
 
 ```
-GET  /                     - Service info
-GET  /health               - Health check
-POST /api/validate         - Validate word
-POST /api/solve            - Get next agent guess
-GET  /api/words/stats      - Word statistics
-GET  /api/words/random     - Get random word
-GET  /api/words/daily      - Get daily word
+algorithms/
+├── __init__.py              # Factory pattern: create_agent()
+├── base_agent.py            # Abstract base class với shared logic
+├── dfs_algorithm.py         # DFS implementation
+├── hill_climbing_algorithm.py
+└── simulated_annealing_algorithm.py
 ```
 
-### Example API Usage
+### So sánh 3 thuật toán hiện tại
 
-**Validate Word:**
+| Thuật toán | Chiến lược | Ưu điểm | Nhược điểm |
+|-----------|-----------|---------|-----------|
+| **DFS** | Frequency-based scoring | Ổn định, đáng tin cậy | Có thể chậm |
+| **Hill Climbing** | Greedy local search | Nhanh | Dễ bị stuck ở local optima |
+| **Simulated Annealing** | Probabilistic search | Thoát được local optima | Ít dự đoán được |
+
+### BaseAgent - Shared Logic
+
+File `base_agent.py` cung cấp các method dùng chung:
+
+```python
+from abc import ABC, abstractmethod
+
+class BaseAgent(ABC):
+    """Base class cho tất cả thuật toán"""
+    
+    def __init__(self, word_list: list[str]):
+        self.word_list = [word.upper() for word in word_list]
+        self.possible_words = self.word_list.copy()
+    
+    # Abstract method - phải implement trong subclass
+    @abstractmethod
+    def choose_best_guess(self, possible_words: list[str]) -> str:
+        """Logic chọn từ tiếp theo - IMPLEMENT THUẬT TOÁN Ở ĐÂY"""
+        pass
+    
+    # Shared methods - dùng được trong mọi thuật toán
+    def filter_possible_words(self, guess: str, evaluation: list[str]) -> None:
+        """Lọc danh sách từ dựa trên feedback"""
+        pass
+    
+    def score_word_frequency(self, word: str, possible_words: list[str]) -> float:
+        """Tính điểm dựa trên tần suất chữ cái"""
+        pass
+    
+    def score_word_entropy(self, word: str, possible_words: list[str]) -> float:
+        """Tính entropy (information gain) của từ"""
+        pass
+    
+    def simulate_evaluation(self, guess: str, answer: str) -> list[str]:
+        """Mô phỏng feedback nếu đoán từ này"""
+        pass
+    
+    def get_optimal_starters(self) -> list[str]:
+        """Trả về danh sách từ mở đầu tối ưu"""
+        return ['AROSE', 'SLATE', 'CRATE', 'TRACE', 'STARE']
+```
+
+### Cách thêm thuật toán mới
+
+#### Bước 1: Tạo file thuật toán mới
+
+Tạo file `Backend/algorithms/my_algorithm.py`:
+
+```python
+from .base_agent import BaseAgent
+import random
+
+class MyAlgorithmAgent(BaseAgent):
+    """Mô tả thuật toán của bạn"""
+    
+    def choose_best_guess(self, possible_words: list[str]) -> str:
+        """
+        Logic chọn từ tiếp theo.
+        
+        Args:
+            possible_words: Danh sách từ còn khả năng đúng
+            
+        Returns:
+            Từ được chọn để đoán
+        """
+        if not possible_words:
+            return random.choice(self.word_list)
+        
+        # Nếu chỉ còn 1 từ, chọn luôn
+        if len(possible_words) == 1:
+            return possible_words[0]
+        
+        # === IMPLEMENT THUẬT TOÁN CỦA BẠN Ở ĐÂY ===
+        
+        # Ví dụ: Chọn từ có entropy cao nhất
+        best_word = possible_words[0]
+        best_score = -1
+        
+        # Sample 100 từ để tăng tốc độ
+        sample_size = min(100, len(possible_words))
+        candidates = random.sample(possible_words, sample_size)
+        
+        for word in candidates:
+            # Dùng helper method từ BaseAgent
+            score = self.score_word_entropy(word, possible_words)
+            
+            if score > best_score:
+                best_score = score
+                best_word = word
+        
+        return best_word
+```
+
+**Helper methods có sẵn từ BaseAgent:**
+
+```python
+# Tính điểm frequency (càng cao càng tốt)
+score = self.score_word_frequency(word, possible_words)
+
+# Tính entropy - information gain (càng cao càng tốt)
+entropy = self.score_word_entropy(word, possible_words)
+
+# Mô phỏng feedback
+evaluation = self.simulate_evaluation(guess="AROSE", answer="SLATE")
+# Returns: ["absent", "absent", "absent", "present", "correct"]
+
+# Lấy từ mở đầu tối ưu
+starters = self.get_optimal_starters()
+# Returns: ['AROSE', 'SLATE', 'CRATE', 'TRACE', 'STARE']
+```
+
+#### Bước 2: Đăng ký vào Factory
+
+Sửa file `Backend/algorithms/__init__.py`:
+
+```python
+from .base_agent import BaseAgent
+from .dfs_algorithm import DFSAgent
+from .hill_climbing_algorithm import HillClimbingAgent
+from .simulated_annealing_algorithm import SimulatedAnnealingAgent
+from .my_algorithm import MyAlgorithmAgent  # Import thuật toán mới
+
+def create_agent(word_list: list[str], algorithm: str) -> BaseAgent:
+    """Factory pattern để tạo agent"""
+    algorithm = algorithm.lower()
+    
+    if algorithm == "dfs":
+        return DFSAgent(word_list)
+    elif algorithm == "hill_climbing":
+        return HillClimbingAgent(word_list)
+    elif algorithm == "simulated_annealing":
+        return SimulatedAnnealingAgent(word_list)
+    elif algorithm == "my_algorithm":  # Thêm case mới
+        return MyAlgorithmAgent(word_list)
+    else:
+        return DFSAgent(word_list)  # Default
+
+__all__ = [
+    'BaseAgent',
+    'DFSAgent', 
+    'HillClimbingAgent',
+    'SimulatedAnnealingAgent',
+    'MyAlgorithmAgent',  # Export
+    'create_agent'
+]
+```
+
+#### Bước 3: Test thuật toán
+
 ```bash
-curl -X POST http://localhost:8000/api/validate \
-  -H "Content-Type: application/json" \
-  -d '{"word": "hello"}'
+cd Backend
+python -c "
+from algorithms import create_agent
+
+# Load word list
+with open('words.txt', 'r') as f:
+    words = [line.strip() for line in f]
+
+# Tạo agent với thuật toán mới
+agent = create_agent(words, 'my_algorithm')
+
+# Test
+guess = agent.make_guess()
+print(f'First guess: {guess}')
+
+# Giả sử có feedback
+agent.filter_possible_words('AROSE', ['absent', 'absent', 'absent', 'present', 'absent'])
+guess2 = agent.make_guess()
+print(f'Second guess: {guess2}')
+"
 ```
 
-**Agent Solver:**
+#### Bước 4: Chạy qua API
+
+Thuật toán tự động khả dụng qua API:
+
 ```bash
-curl -X POST http://localhost:8000/api/solve \
+# Test qua endpoint /api/agent/run
+curl -X POST http://localhost:8000/api/agent/run \
   -H "Content-Type: application/json" \
   -d '{
-    "guesses": ["AROSE"],
-    "evaluations": [["absent","absent","absent","present","absent"]]
+    "target_word": "SLATE",
+    "algorithm": "my_algorithm",
+    "max_attempts": 6
   }'
 ```
 
-## Docker Commands
+Frontend sẽ tự động hiển thị thuật toán mới trong dropdown nếu bạn thêm vào `GameControls.tsx`.
+
+### Chi tiết 3 thuật toán hiện tại
+
+#### 1. DFS Algorithm (`dfs_algorithm.py`)
+
+**Chiến lược:** Frequency-based scoring với systematic exploration
+
+```python
+def choose_best_guess(self, possible_words: list[str]) -> str:
+    # Nếu còn ít từ, chọn trực tiếp từ có frequency cao nhất
+    if len(possible_words) <= 10:
+        return max(possible_words, 
+                   key=lambda w: self.score_word_frequency(w, possible_words))
+    
+    # Sample 50 từ và chọn từ tốt nhất
+    candidates = random.sample(possible_words, min(50, len(possible_words)))
+    return max(candidates,
+               key=lambda w: self.score_word_frequency(w, possible_words))
+```
+
+**Khi nào dùng:** Khi cần kết quả ổn định và đáng tin cậy.
+
+#### 2. Hill Climbing (`hill_climbing_algorithm.py`)
+
+**Chiến lược:** Greedy local search - luôn chọn neighbor tốt hơn
+
+```python
+def choose_best_guess(self, possible_words: list[str]) -> str:
+    # Bắt đầu từ từ ngẫu nhiên
+    current = random.choice(possible_words[:50])
+    current_score = self.score_word_entropy(current, possible_words)
+    
+    # Tối đa 20 iterations
+    for _ in range(20):
+        # Lấy 30 neighbors ngẫu nhiên
+        neighbors = random.sample(possible_words, min(30, len(possible_words)))
+        
+        # Tìm neighbor tốt hơn
+        improved = False
+        for neighbor in neighbors:
+            score = self.score_word_entropy(neighbor, possible_words)
+            if score > current_score:
+                current = neighbor
+                current_score = score
+                improved = True
+                break
+        
+        # Nếu không tìm được neighbor tốt hơn, dừng
+        if not improved:
+            break
+    
+    return current
+```
+
+**Khi nào dùng:** Khi cần tốc độ nhanh, chấp nhận risk bị stuck.
+
+#### 3. Simulated Annealing (`simulated_annealing_algorithm.py`)
+
+**Chiến lược:** Probabilistic acceptance với temperature cooling
+
+```python
+def choose_best_guess(self, possible_words: list[str]) -> str:
+    current = random.choice(possible_words[:50])
+    current_score = self.score_word_entropy(current, possible_words)
+    
+    temperature = 100.0  # Nhiệt độ ban đầu
+    cooling_rate = 0.85  # Tốc độ làm lạnh
+    
+    for _ in range(50):
+        # Chọn neighbor ngẫu nhiên
+        neighbor = random.choice(possible_words)
+        neighbor_score = self.score_word_entropy(neighbor, possible_words)
+        
+        delta = neighbor_score - current_score
+        
+        # Chấp nhận nếu tốt hơn, hoặc theo xác suất
+        if delta > 0 or random.random() < math.exp(delta / temperature):
+            current = neighbor
+            current_score = neighbor_score
+        
+        # Giảm nhiệt độ
+        temperature *= cooling_rate
+        
+        if temperature < 1.0:
+            break
+    
+    return current
+```
+
+**Khi nào dùng:** Khi cần explore solution space rộng hơn, tránh local optima.
+
+### Ví dụ thuật toán nâng cao
+
+#### Genetic Algorithm Example
+
+```python
+from .base_agent import BaseAgent
+import random
+
+class GeneticAlgorithmAgent(BaseAgent):
+    """Genetic Algorithm cho Wordle"""
+    
+    def __init__(self, word_list: list[str], population_size=50, generations=20):
+        super().__init__(word_list)
+        self.population_size = population_size
+        self.generations = generations
+    
+    def choose_best_guess(self, possible_words: list[str]) -> str:
+        if len(possible_words) <= 2:
+            return possible_words[0]
+        
+        # Tạo population ban đầu
+        population = random.sample(
+            possible_words, 
+            min(self.population_size, len(possible_words))
+        )
+        
+        for generation in range(self.generations):
+            # Đánh giá fitness
+            fitness_scores = [
+                (word, self.score_word_entropy(word, possible_words))
+                for word in population
+            ]
+            fitness_scores.sort(key=lambda x: x[1], reverse=True)
+            
+            # Selection: giữ top 50%
+            survivors = [word for word, _ in fitness_scores[:len(population)//2]]
+            
+            # Crossover & Mutation: tạo thế hệ mới
+            new_population = survivors.copy()
+            while len(new_population) < self.population_size:
+                # Random word từ possible_words
+                new_word = random.choice(possible_words)
+                new_population.append(new_word)
+            
+            population = new_population
+        
+        # Trả về best individual
+        best_word = max(
+            population,
+            key=lambda w: self.score_word_entropy(w, possible_words)
+        )
+        return best_word
+```
+
+### Metrics để đánh giá thuật toán
+
+Khi test thuật toán, track các metrics sau:
+
+```python
+# Trong Backend/test_algorithm.py
+def benchmark_algorithm(algorithm_name: str, test_words: list[str]):
+    results = {
+        'total_games': len(test_words),
+        'wins': 0,
+        'losses': 0,
+        'total_attempts': 0,
+        'attempt_distribution': {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0},
+        'failed_words': []
+    }
+    
+    for target_word in test_words:
+        attempts = run_game(algorithm_name, target_word)
+        
+        if attempts <= 6:
+            results['wins'] += 1
+            results['attempt_distribution'][attempts] += 1
+        else:
+            results['losses'] += 1
+            results['failed_words'].append(target_word)
+        
+        results['total_attempts'] += attempts
+    
+    # Tính metrics
+    results['win_rate'] = results['wins'] / results['total_games'] * 100
+    results['avg_attempts'] = results['total_attempts'] / results['total_games']
+    
+    return results
+```
+
+**Metrics quan trọng:**
+- **Win Rate**: % game giải được trong 6 lượt
+- **Average Attempts**: Số lượt trung bình để giải
+- **Attempt Distribution**: Phân bố số lượt (1-6)
+- **Failed Words**: Danh sách từ không giải được
+
+## 📡 API Endpoints
+
+### Agent API
 
 ```bash
-# Start all services (frontend + backend)
+# Chạy game tự động với agent
+POST /api/agent/run
+Body: {
+  "target_word": "SLATE",      # Từ cần đoán (optional, random nếu không có)
+  "algorithm": "dfs",          # dfs | hill_climbing | simulated_annealing
+  "max_attempts": 6
+}
+
+Response: {
+  "success": true,
+  "word": "SLATE",
+  "attempts": 4,
+  "guesses": ["AROSE", "SLATE", ...],
+  "evaluations": [[...], [...], ...]
+}
+```
+
+### Word API
+
+```bash
+# Validate từ
+POST /api/validate
+Body: {"word": "hello"}
+
+# Random word
+GET /api/words/random
+
+# Word stats
+GET /api/words/stats
+```
+
+### History API
+
+```bash
+# Lưu game history
+POST /api/history
+Body: {
+  "word": "SLATE",
+  "won": true,
+  "attempts": 4,
+  "score": 600,
+  "guesses": ["AROSE", "SLATE"],
+  "evaluations": [[...], [...]]
+}
+
+# Lấy game history
+GET /api/history?limit=100
+
+# Lấy statistics
+GET /api/history/stats
+
+# Xóa history
+DELETE /api/history
+```
+
+## 🐳 Docker Commands
+
+```bash
+# Start services
 docker-compose up -d
 
 # View logs
 docker-compose logs -f
 
-# View backend logs only
+# Backend logs only
 docker-compose logs -f backend
-
-# View frontend logs only
-docker-compose logs -f frontend
 
 # Stop services
 docker-compose down
 
-# Rebuild and restart
+# Rebuild
 docker-compose up --build
 
-# Remove everything (including volumes)
+# Remove everything
 docker-compose down -v
 ```
 
-## Game Rules
+## 🧪 Testing
 
-1. Guess the 5-letter word in 6 attempts
-2. 🟩 Green = Correct letter in correct position
-3. 🟨 Yellow = Correct letter in wrong position
-4. ⬛ Gray = Letter not in word
-5. 🤖 Agent = Let AI solve it for you!
+### Test thuật toán
 
-## Agent Solver
-
-The game includes **three AI solving algorithms** that you can choose from:
-
-### 🔍 Algorithm Comparison
-
-| Algorithm | Strategy | Pros | Cons | Best For |
-|-----------|----------|------|------|----------|
-| **DFS** | Frequency-based scoring | Consistent, reliable | Can be slow | Guaranteed solutions |
-| **Hill Climbing** | Greedy local search | Fast convergence | May get stuck in local optima | Quick solving |
-| **Simulated Annealing** | Probabilistic search | Escapes local optima | Less predictable | Exploring solution space |
-
-### 📁 Algorithm Architecture
-
-All algorithms are located in `FrontEnd/src/algorithms/`:
-
-```
-algorithms/
-├── base-agent.ts                    # Abstract base class (shared logic)
-├── dfs-algorithm.ts                 # DFS implementation
-├── hill-climbing-algorithm.ts       # Hill Climbing implementation
-├── simulated-annealing-algorithm.ts # Simulated Annealing implementation
-└── index.ts                         # Factory pattern & exports
-```
-
-### 🎯 Algorithm Details
-
-#### 1. DFS (Depth-First Search)
-- **Strategy**: Systematic exploration with frequency-based scoring
-- **Steps**:
-  1. First guess: Uses optimal starters (AROSE, SLATE, CRATE, etc.)
-  2. Filter: Eliminates impossible words based on feedback patterns
-  3. Score: Ranks words by letter/position frequency
-  4. Choose: Selects highest-scoring word
-  5. Repeat until solved
-
-#### 2. Hill Climbing
-- **Strategy**: Greedy local search - always moves to better neighbor
-- **Steps**:
-  1. Start: Random word from top candidates
-  2. Evaluate: Score using entropy (information gain)
-  3. Check neighbors: Sample 30 nearby words
-  4. Move: Jump to first better neighbor found
-  5. Repeat: Max 20 iterations or until no improvement
-
-#### 3. Simulated Annealing
-- **Strategy**: Probabilistic acceptance with temperature cooling
-- **Steps**:
-  1. Start: Random word from top candidates
-  2. Temperature: Begins at 100, cools to 1 (cooling rate: 0.85)
-  3. Neighbor: Pick random nearby word
-  4. Accept: Always accept better, sometimes accept worse (probability = e^(Δ/T))
-  5. Cool down: Reduce temperature each iteration
-  6. Repeat: Max 50 iterations or until temperature drops
-
-### 🛠️ How to Add a New Algorithm
-
-**For Algorithm Developers:**
-
-1. **Create your algorithm file** in `FrontEnd/src/algorithms/`:
-   ```typescript
-   // my-algorithm.ts
-   import { BaseAgent } from "./base-agent";
-   import { normalize } from "@/utils/game-utils";
-
-   export class MyAlgorithmAgent extends BaseAgent {
-     constructor(wordList: string[]) {
-       super(wordList.map(w => normalize(w)));
-     }
-
-     protected chooseBestGuess(possibleWords: string[]): string {
-       // Your algorithm logic here
-       // Access helper methods:
-       // - this.scoreWordFrequency(word, possibleWords)
-       // - this.scoreWordEntropy(word, possibleWords)
-       // - this.simulateEvaluation(guess, answer)
-       // - this.getOptimalStarters()
-       
-       return bestWord;
-     }
-   }
-   ```
-
-2. **Add to type definitions** in `FrontEnd/src/types/types.ts`:
-   ```typescript
-   export type AlgorithmType = 
-     | 'dfs' 
-     | 'hill-climbing' 
-     | 'simulated-annealing'
-     | 'my-algorithm';  // Add your algorithm
-   ```
-
-3. **Register in factory** in `FrontEnd/src/algorithms/index.ts`:
-   ```typescript
-   import { MyAlgorithmAgent } from './my-algorithm';
-
-   export function createAgent(wordList: string[], algorithm: AlgorithmType): BaseAgent {
-     switch (algorithm) {
-       case 'dfs':
-         return new DFSAgent(wordList);
-       case 'hill-climbing':
-         return new HillClimbingAgent(wordList);
-       case 'simulated-annealing':
-         return new SimulatedAnnealingAgent(wordList);
-       case 'my-algorithm':
-         return new MyAlgorithmAgent(wordList);  // Add your case
-       default:
-         return new DFSAgent(wordList);
-     }
-   }
-
-   export function getAlgorithmName(algorithm: AlgorithmType): string {
-     // Add display name for UI
-   }
-
-   export function getAlgorithmDescription(algorithm: AlgorithmType): string {
-     // Add description for UI
-   }
-   ```
-
-4. **Update UI dropdown** in `FrontEnd/src/components/GameControls.tsx`:
-   ```tsx
-   <select value={selectedAlgorithm} onChange={...}>
-     <option value="dfs">DFS (Depth-First Search)</option>
-     <option value="hill-climbing">Hill Climbing</option>
-     <option value="simulated-annealing">Simulated Annealing</option>
-     <option value="my-algorithm">My Algorithm Name</option>
-   </select>
-   ```
-
-### 📊 Available Helper Methods (from BaseAgent)
-
-When developing your algorithm, you have access to:
-
-```typescript
-// Filter words matching all previous guess patterns
-protected filterPossibleWords(words: string[], guesses: GuessResult[]): string[]
-
-// Check if a word matches a specific guess pattern
-protected wordMatchesPattern(word: string, guess: GuessResult): boolean
-
-// Score based on letter frequency in remaining words
-protected scoreWordFrequency(word: string, possibleWords: string[]): number
-
-// Score based on entropy (information gain) - higher = better
-protected scoreWordEntropy(word: string, possibleWords: string[]): number
-
-// Simulate what feedback would be if this word was the answer
-protected simulateEvaluation(guess: string, answer: string): LetterState[]
-
-// Get optimal starting words
-protected getOptimalStarters(): string[]  // Returns ['AROSE', 'SLATE', 'CRATE', 'TRACE', 'STARE']
-```
-
-### 🎮 Testing Your Algorithm
-
-1. **Run development mode**:
-   ```bash
-   cd FrontEnd
-   npm run dev
-   ```
-
-2. **Select your algorithm** from dropdown in the game UI
-
-3. **Click "🤖 Agent Solve"** and watch it play
-
-4. **Check console logs** for debugging:
-   ```javascript
-   console.log(`🤖 Using ${algorithm.toUpperCase()} algorithm`);
-   console.log(`🤖 Agent guess (client-side): ${guess}`);
-   ```
-
-### 🔬 Algorithm Performance Metrics
-
-To benchmark your algorithm, track these metrics:
-- **Success rate**: % of games solved within 6 attempts
-- **Average attempts**: Mean number of guesses to solve
-- **Average time**: Execution time per guess
-- **Word coverage**: % of word list it can solve
-
-**Backend vs Client-side:**
-- Backend solver (Python) is currently DFS-only
-- Frontend supports all three algorithms (TypeScript)
-- Automatically falls back to client-side if backend unavailable
-
-## Tech Stack
-
-- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS, Zustand
-- **Backend**: Python 3.11, FastAPI, Uvicorn
-- **Deployment**: Docker, Docker Compose
-- **Algorithms**: 
-  - DFS (Depth-First Search with frequency scoring)
-  - Hill Climbing (Greedy local search)
-  - Simulated Annealing (Probabilistic global search)
-- **Architecture Pattern**: Factory pattern, Abstract base class, Modular algorithm system
-
-## Environment Variables
-
-### Frontend
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000  # Backend API URL
-```
-
-### Backend
-```env
-PYTHONUNBUFFERED=1
-```
-
-## Development
-
-### Adding New Algorithms (For Algorithm Researchers)
-
-See the **"How to Add a New Algorithm"** section above for detailed instructions.
-
-**Quick Start:**
-1. Create new file in `FrontEnd/src/algorithms/`
-2. Extend `BaseAgent` class
-3. Implement `chooseBestGuess()` method
-4. Register in factory pattern
-5. Test in UI
-
-### Backend Development
 ```bash
 cd Backend
-pip install -r Requirements.txt
 
-# Run with auto-reload
-uvicorn main:app --reload --port 8000
+# Test 1 thuật toán
+python -c "
+from algorithms import create_agent
+
+with open('words.txt') as f:
+    words = [line.strip() for line in f]
+
+agent = create_agent(words, 'dfs')
+guess = agent.make_guess()
+print(f'Guess: {guess}')
+"
 ```
 
-### Frontend Development
-```bash
-cd FrontEnd
-npm install
-npm run dev
-```
+### Test API
 
-### Debugging Agent Algorithms
-```bash
-# Frontend logs show algorithm execution
-cd FrontEnd
-npm run dev
-
-# Open browser console (F12) to see:
-# - Algorithm selection
-# - Each guess made by agent
-# - Remaining word count
-# - Scoring decisions
-```
-
-## Testing
-
-### Test Backend API
 ```bash
 # Health check
 curl http://localhost:8000/health
 
-# Get word stats
-curl http://localhost:8000/api/words/stats
-
-# Validate word
-curl -X POST http://localhost:8000/api/validate \
+# Test agent
+curl -X POST http://localhost:8000/api/agent/run \
   -H "Content-Type: application/json" \
-  -d '{"word": "tests"}'
+  -d '{"algorithm": "hill_climbing", "max_attempts": 6}'
 ```
 
-## Troubleshooting
+## 🔧 Troubleshooting
 
-### Backend not connecting
-1. Check Docker logs: `docker-compose logs backend`
-2. Verify backend health: `curl http://localhost:8000/health`
-3. Check CORS settings in `main.py`
+### Backend không chạy
 
-### Frontend can't reach backend
-1. Check `NEXT_PUBLIC_API_URL` environment variable
-2. Verify both services are running: `docker-compose ps`
-3. Check browser console for CORS errors
-
-### Port conflicts
 ```bash
-# Check what's using port 3000
-netstat -ano | findstr :3000
+# Check logs
+docker-compose logs backend
 
-# Check what's using port 8000
+# Hoặc chạy trực tiếp
+cd Backend
+uvicorn main:app --reload
+```
+
+### Frontend không connect Backend
+
+1. Kiểm tra `FrontEnd/.env.local`:
+   ```
+   NEXT_PUBLIC_API_URL=http://localhost:8000
+   ```
+
+2. Verify backend đang chạy:
+   ```bash
+   curl http://localhost:8000/health
+   ```
+
+### Port conflict
+
+```powershell
+# Kiểm tra port 8000
 netstat -ano | findstr :8000
 
-# Kill process (Windows)
+# Kiểm tra port 3000  
+netstat -ano | findstr :3000
+
+# Kill process
 taskkill /PID <PID> /F
 ```
 
-## License
+## 📚 Tech Stack
+
+- **Backend**: Python 3.11, FastAPI, Uvicorn
+- **Frontend**: Next.js 16, React 19, TypeScript, Zustand, Tailwind CSS
+- **Deployment**: Docker, Docker Compose
+- **Algorithms**: DFS, Hill Climbing, Simulated Annealing (extensible)
+
+## 🎓 Dành cho Algorithm Developers
+
+**Workflow phát triển thuật toán:**
+
+1. **Research**: Nghiên cứu thuật toán (GA, A*, MCTS, etc.)
+2. **Implement**: Tạo file mới trong `Backend/algorithms/`
+3. **Extend BaseAgent**: Kế thừa và implement `choose_best_guess()`
+4. **Register**: Thêm vào factory pattern trong `__init__.py`
+5. **Test**: Chạy benchmark với test words
+6. **Tune**: Điều chỉnh parameters để tối ưu performance
+7. **Deploy**: Commit code, rebuild Docker
+
+**Tài nguyên hữu ích:**
+- BaseAgent source code: Xem `Backend/algorithms/base_agent.py`
+- DFS example: Xem `Backend/algorithms/dfs_algorithm.py`
+- Helper methods: Frequency scoring, Entropy calculation, Pattern matching
+- Test framework: Tạo file `Backend/test_algorithm.py` để benchmark
+
+**Tips:**
+- Dùng `score_word_entropy()` cho information gain
+- Dùng `score_word_frequency()` cho probability
+- Sample words để tăng tốc độ (avoid brute force)
+- Track metrics: win rate, average attempts, time
+- Test với nhiều target words khác nhau
+
+## 📝 License
 
 MIT
+
+---
+
+**Contributor Guide**: Xem phần "🤖 Hướng dẫn phát triển Thuật toán" phía trên để bắt đầu implement thuật toán mới!
 

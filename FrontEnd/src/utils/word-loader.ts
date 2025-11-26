@@ -1,24 +1,60 @@
-// Utility to load words from words.txt file
-let cachedWords: string[] | null = null;
+// Utility to load words from backend API
+import { backendAPI } from './backend-api';
+
+let cachedWords: string[] = [];
+let loadingPromise: Promise<string[]> | null = null;
 
 export async function loadWords(): Promise<string[]> {
-  if (cachedWords) {
+  if (cachedWords.length > 0) {
     return cachedWords;
   }
 
-  try {
-    const response = await fetch('/words.txt');
-    const text = await response.text();
-    cachedWords = text
-      .split('\n')
-      .map(word => word.trim().toUpperCase())
-      .filter(word => word.length === 5); // Only 5-letter words
-    return cachedWords;
-  } catch (error) {
-    console.error('Failed to load words.txt:', error);
-    // Fallback to empty array or default words
-    return [];
+  // If already loading, return the same promise
+  if (loadingPromise) {
+    return loadingPromise;
   }
+
+  loadingPromise = (async () => {
+    try {
+      // Try to load from backend first
+      const isBackendHealthy = await backendAPI.healthCheck();
+      
+      if (isBackendHealthy) {
+        console.log('📚 Loading word list from backend...');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/words/all`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          cachedWords = data.words.map((word: string) => word.trim().toUpperCase());
+          console.log(`✅ Loaded ${cachedWords.length} words from backend`);
+          return cachedWords;
+        }
+      }
+      
+      // Fallback: load from local file if backend fails
+      console.log('⚠️ Backend not available, trying local words.txt...');
+      const response = await fetch('/words.txt');
+      if (response.ok) {
+        const text = await response.text();
+        cachedWords = text
+          .split('\n')
+          .map(word => word.trim().toUpperCase())
+          .filter(word => word.length === 5);
+        console.log(`✅ Loaded ${cachedWords.length} words from local file`);
+        return cachedWords;
+      }
+      
+      throw new Error('Both backend and local file failed');
+    } catch (error) {
+      console.error('❌ Failed to load words:', error);
+      // Return empty array as last resort
+      return [];
+    } finally {
+      loadingPromise = null;
+    }
+  })();
+
+  return loadingPromise;
 }
 
 export function getRandomWordFromList(words: string[]): string {
