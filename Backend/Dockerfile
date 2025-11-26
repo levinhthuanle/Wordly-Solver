@@ -10,7 +10,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Copy dependency files and source code (needed for editable install)
 COPY pyproject.toml README.md ./
-COPY backend/ ./backend/
+COPY src/ ./src/
 COPY algorithms/ ./algorithms/
 
 # Install dependencies with uv
@@ -19,5 +19,6 @@ RUN uv pip install --system --no-cache -e .
 # Expose port
 EXPOSE 8000
 
-# Run with uvicorn
+# Add src to PYTHONPATH and run with uvicorn
+ENV PYTHONPATH=/app/src
 CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

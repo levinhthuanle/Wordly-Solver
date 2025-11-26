@@ -1,24 +1,23 @@
 # 🎮 Wordly Solver
 
-> **AI-Powered Wordle Game** - Chơi Wordle hoặc xem AI giải bằng 3 thuật toán tìm kiếm thông minh
+> **AI-Powered Wordle Game** - Chơi Wordle với AI gợi ý thông minh sử dụng 3 thuật toán tìm kiếm
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-00979D?logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
 [![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python)](https://python.org/)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker)](https://docker.com/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 ## ✨ Tính năng
 
 - 🎯 **Trò chơi Wordle tương tác** - Đoán từ 5 chữ cái trong 6 lần thử
-- 🤖 **AI Solver thông minh** - 3 thuật toán AI với độ chính xác cao:
+- 🤖 **AI Suggestion thông minh** - 3 thuật toán AI hỗ trợ:
   - **DFS (Depth-First Search)** - Tìm kiếm có hệ thống
   - **Hill Climbing** - Tối ưu hóa tham lam
-  - **Simulated Annealing** - Tối ưu xác suất với làm nguội
-- 📊 **Thống kê chi tiết** - Theo dõi hiệu suất qua các ván chơi
-- 🎨 **Giao diện đẹp mắt** - Responsive, hoạt động mượt trên mọi thiết bị
-- 🐳 **Docker hóa hoàn toàn** - Khởi chạy 1 lệnh với Docker Compose
-- ⚡ **Hiệu năng cao** - Startup nhanh 4x, memory giảm 33%
+  - **Simulated Annealing** - Tối ưu xác suất
+- 💡 **Gợi ý chi tiết** - Confidence score và reasoning rõ ràng
+- 📊 **Thống kê đầy đủ** - Win rate, streaks, phân tích hiệu suất
+- 🎨 **Giao diện đẹp mắt** - Responsive, dark mode, animations
+- 🐳 **Docker hóa hoàn toàn** - Khởi chạy với 1 lệnh
 
 ## 🏗️ Kiến trúc
 
@@ -26,26 +25,22 @@
 
 ```
 Backend/
-├── backend/
-│   ├── main.py          # FastAPI app factory (47 dòng)
-│   ├── schema.py        # Pydantic models (31 dòng)
-│   ├── agent.py         # AI solver logic (117 dòng)
-│   ├── api/
-│   │   └── routes.py    # API endpoints (82 dòng)
-│   └── data/
-│       └── wordlist.json # 14,855 từ hợp lệ
-├── algorithms/          # Thuật toán AI
+├── src/
+│   └── backend/         # Main package
+│       ├── main.py      # FastAPI app
+│       ├── schema.py    # Pydantic models
+│       ├── agent.py     # AI solver logic
+│       ├── api/
+│       │   └── routes.py # API endpoints
+│       └── data/
+│           └── wordlist.json # 14,855 từ
+├── algorithms/          # AI algorithms
 │   ├── dfs_algorithm.py
 │   ├── hill_climbing_algorithm.py
 │   └── simulated_annealing_algorithm.py
-└── pyproject.toml       # Dependencies hiện đại
+├── pyproject.toml       # Modern dependencies
+└── uv.lock             # Dependency lock
 ```
-
-**Cải tiến:**
-- ✅ Kiến trúc modular (380 dòng → 4 modules)
-- ✅ Lazy loading wordlist (nhanh hơn 4x)
-- ✅ FastAPI 0.115+ & Pydantic 2.9+
-- ✅ Type-safe với validation đầy đủ
 
 ### Frontend (Next.js 16 + TypeScript)
 
@@ -54,14 +49,20 @@ FrontEnd/
 ├── src/
 │   ├── app/             # Next.js App Router
 │   ├── components/      # React components
+│   │   ├── WordlyMain.tsx
+│   │   ├── GameBoard.tsx
+│   │   ├── GameHeader.tsx
+│   │   ├── AISuggestionPanel.tsx
+│   │   └── keyboard/
 │   ├── hooks/           # Custom hooks
-│   │   ├── useAgentSolver.ts    # AI solver hook
-│   │   ├── useGameController.ts # Game logic
-│   │   └── useGameStats.ts      # Statistics
+│   │   ├── useAISuggestions.ts
+│   │   ├── useGameController.ts
+│   │   └── useGameStats.ts
 │   ├── stores/          # Zustand state
+│   │   └── game-store.ts
 │   └── utils/
 │       ├── api-utils.ts      # API client
-│       └── word-loader.ts    # Word loader
+│       └── game-utils.ts
 └── Dockerfile
 ```
 
@@ -239,32 +240,27 @@ docker ps
    - Nhập từ 5 chữ cái và nhấn Enter
    - Màu xanh lá = đúng vị trí, vàng = sai vị trí, xám = không có
 
-2. **Dùng AI Hint**:
-   - Click "Get AI Hint" để nhận gợi ý
+2. **Dùng AI Suggestion**:
+   - Click "Get Suggestion" để nhận gợi ý từ AI
    - Chọn thuật toán: DFS, Hill Climbing, hoặc Simulated Annealing
-   - Xem confidence và reasoning
+   - Xem confidence score và reasoning chi tiết
 
-3. **Xem AI tự giải**:
-   - Click "Let AI Solve"
-   - AI sẽ tự động giải từng bước
-   - Theo dõi quá trình suy nghĩ của AI
-
-4. **Xem thống kê**:
-   - Click biểu tượng thống kê
+3. **Xem thống kê**:
+   - Click icon Statistics ở header
    - Xem win rate, average attempts, streak
+   - Phân tích distribution chart
 
-## 🛠️ Development
+## 📝 Development
 
 ### Cấu trúc Project
 
 ```
 Wordly-Solver/
 ├── Backend/              # FastAPI backend
+│   ├── src/backend/      # Main package
+│   └── algorithms/       # AI algorithms
 ├── FrontEnd/             # Next.js frontend
-├── docker-compose.yml    # Docker orchestration
-├── README.md            # Tài liệu này
-├── MIGRATION.md         # Hướng dẫn migration
-└── DEPLOYMENT_STATUS.md # Trạng thái deployment
+└── docker-compose.yml    # Docker orchestration
 ```
 
 ### Environment Variables
@@ -282,44 +278,6 @@ NEXT_PUBLIC_SOLVER_API=http://localhost:8000/api
 2. **Models**: Định nghĩa schema trong `backend/schema.py`
 3. **Frontend**: Tạo hook trong `src/hooks/`
 4. **UI**: Build component trong `src/components/`
-
-## 📝 Migration từ v1.x
-
-Chi tiết trong [MIGRATION.md](./MIGRATION.md)
-
-**Breaking Changes:**
-- ❌ `/api/agent/run` - Removed (AI chạy ở frontend)
-- ❌ `/api/history/*` - Removed (dùng localStorage)
-- ❌ `/api/words/random|daily` - Removed (tạo ở frontend)
-- ✅ Response format mới với `confidence` và `reasoning`
-
-## 🔍 Troubleshooting
-
-**Backend không start:**
-```bash
-# Kiểm tra logs
-docker logs wordly-solver-backend-1
-
-# Thường do thiếu curl
-# → Đã fix trong Dockerfile
-```
-
-**Frontend không connect được backend:**
-```bash
-# Kiểm tra env var
-echo $NEXT_PUBLIC_SOLVER_API
-
-# Phải là: http://backend:8000/api (trong Docker)
-# Hoặc: http://localhost:8000/api (dev mode)
-```
-
-**Wordlist không load:**
-```bash
-# Kiểm tra file tồn tại
-ls Backend/backend/data/wordlist.json
-
-# Phải có 14,855 words
-```
 
 ## 🤝 Contributing
 
