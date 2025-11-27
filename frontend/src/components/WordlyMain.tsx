@@ -11,6 +11,7 @@ import { useGameController } from "@/hooks/useGameController";
 import { AISuggestionPanel } from "@/components/AISuggestionPanel";
 import { AttemptsCounter } from "@/components/AttemptsCounter";
 import { useGameStore } from "@/stores/game-store";
+import { GameActions } from "@/components/GameActions";
 
 const OnscreenKeyboard = dynamic(
   () => import("@/components/keyboard/OnscreenKeyboard"),
@@ -36,7 +37,11 @@ export default function WordlyMain() {
     <div className={LAYOUT.container}>
       {/* Elegant header card */}
       <div className="card mb-8">
-        <GameHeader onShowStats={() => setShowStats(true)} />
+        <GameHeader />
+      </div>
+
+      <div className="mb-8 flex w-full justify-center">
+        <GameActions onShowStats={() => setShowStats(true)} />
       </div>
 
       {/* Main game area */}

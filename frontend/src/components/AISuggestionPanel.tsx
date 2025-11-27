@@ -1,12 +1,13 @@
 "use client";
 
+import { BUTTON } from "@/constants/constants";
 import { useAISuggestions } from "@/hooks/useAISuggestions";
 import type { AlgorithmType } from "@/types/types";
 
 const ALGORITHMS: { value: AlgorithmType; label: string }[] = [
-  { value: 'dfs', label: 'DFS (Reliable)' },
-  { value: 'hill-climbing', label: 'Hill Climbing (Fast)' },
-  { value: 'simulated-annealing', label: 'Simulated Annealing' },
+  { value: "dfs", label: "DFS (Reliable)" },
+  { value: "hill-climbing", label: "Hill Climbing (Fast)" },
+  { value: "simulated-annealing", label: "Simulated Annealing" },
 ];
 
 export function AISuggestionPanel() {
@@ -20,66 +21,99 @@ export function AISuggestionPanel() {
     clearSuggestion,
   } = useAISuggestions();
 
-  return (
-    <div className="mb-6 p-4 bg-slate-800 rounded-lg border border-slate-700">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-slate-300">🤖 AI Assistant</h3>
-        
-        <select
-          value={selectedAlgorithm}
-          onChange={(e) => setSelectedAlgorithm(e.target.value as AlgorithmType)}
-          className="px-2 py-1 text-xs bg-slate-700 text-slate-200 rounded border border-slate-600 focus:outline-none focus:border-blue-500"
-          disabled={isLoading}
-        >
-          {ALGORITHMS.map(({ value, label }) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </div>
+  const hasSuggestion = Boolean(suggestion) && !isLoading;
 
-      {suggestion && !isLoading && (
-        <div className="mb-3 p-3 bg-slate-700/50 rounded border border-slate-600">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl font-bold text-green-400 tracking-wider">
-              {suggestion.word}
-            </span>
-            <span className="text-xs text-slate-400">
-              {Math.round(suggestion.confidence * 100)}% confident
-            </span>
-          </div>
-          <p className="text-xs text-slate-300 mb-1">{suggestion.reasoning}</p>
-          <p className="text-xs text-slate-500">
-            {suggestion.remaining_count} word{suggestion.remaining_count !== 1 ? 's' : ''} remaining
+  return (
+    <section className="mt-8 w-full max-w-md rounded-2xl bg-white/80 p-6 shadow-soft ring-1 ring-neutral-200/70 backdrop-blur">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-500">
+            AI Assistant
+          </p>
+          <h2 className="text-xl font-semibold text-neutral-900">
+            Smarter guesses in one tap
+          </h2>
+          <p className="text-sm text-neutral-500">
+            Let the solver scan your history and surface the next best move.
           </p>
         </div>
-      )}
+        <label className="flex flex-col gap-1 text-xs font-medium text-neutral-500">
+          Strategy
+          <select
+            value={selectedAlgorithm}
+            onChange={(event) => setSelectedAlgorithm(event.target.value as AlgorithmType)}
+            disabled={isLoading}
+            className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-800 shadow-soft transition focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {ALGORITHMS.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </header>
 
-      {error && (
-        <div className="mb-3 p-2 bg-red-900/20 border border-red-500/50 rounded">
-          <p className="text-xs text-red-400">{error}</p>
-        </div>
-      )}
+      <div className="mt-6 space-y-4">
+        {error && (
+          <div className="rounded-2xl border border-red-100 bg-red-50/80 px-4 py-3 text-sm text-red-600">
+            {error}
+          </div>
+        )}
 
-      <div className="flex gap-2">
+        {hasSuggestion && suggestion && (
+          <div className="rounded-2xl border border-primary-100 bg-gradient-to-br from-primary-50 to-white px-5 py-4 shadow-inner">
+            <div className="flex items-center justify-between">
+              <span className="text-3xl font-semibold tracking-[0.4em] text-neutral-900">
+                {suggestion.word}
+              </span>
+              <span className="text-xs font-medium text-primary-600">
+                {Math.round(suggestion.confidence * 100)}% match
+              </span>
+            </div>
+            <p className="mt-3 text-sm text-neutral-600">{suggestion.reasoning}</p>
+            <p className="mt-2 text-xs font-medium text-neutral-400">
+              {suggestion.remaining_count} word
+              {suggestion.remaining_count !== 1 ? "s" : ""} still in play
+            </p>
+          </div>
+        )}
+
+        {!error && !hasSuggestion && (
+          <div className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50/80 px-5 py-4 text-sm text-neutral-500">
+            {isLoading
+              ? "Crunching possibilities…"
+              : "Request a suggestion once you have at least one guess."}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-6 flex gap-3">
         <button
           onClick={getSuggestion}
           disabled={isLoading}
-          className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white text-sm font-medium rounded transition-colors"
+          className={`${BUTTON.secondary} flex-1 text-sm`}
         >
-          {isLoading ? '🤔 Thinking...' : '💡 Get Suggestion'}
+          {isLoading ? "Thinking..." : "Ask the agent"}
         </button>
-        
-        {suggestion && (
+
+        {hasSuggestion && (
           <button
             onClick={clearSuggestion}
-            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm rounded transition-colors"
+            className={`${BUTTON.secondary} shrink-0 text-sm`}
           >
-            ✕
+            Clear
           </button>
         )}
       </div>
-    </div>
+
+      <footer className="mt-4 text-xs text-neutral-400">
+        {isLoading
+          ? "Analyzing your previous guesses"
+          : hasSuggestion
+          ? "Tap Clear to try a different strategy"
+          : "Select a strategy to begin"}
+      </footer>
+    </section>
   );
 }
