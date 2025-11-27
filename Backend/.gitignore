@@ -39,5 +39,5 @@ build/
 
 # Legacy files
 words.txt
-main.py
+# main.py
 Requirements.txt
