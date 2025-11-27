@@ -17,7 +17,8 @@ ENV/
 
 # uv
 .uv/
-uv.lock
+# Keep uv.lock for reproducible builds
+!uv.lock
 
 # IDE
 .vscode/
