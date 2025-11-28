@@ -1,0 +1,374 @@
+"""Performance benchmarking tests for solver algorithms.
+
+This module tests and compares the efficiency of all solver strategies across multiple metrics:
+- Search Time: Average time per suggestion
+- Memory Usage: Peak memory consumption
+- Expanded Nodes: Number of words evaluated
+- Average Guesses: How many attempts to solve
+
+Run with: pytest tests/test_performance.py -v -s
+"""
+
+import time
+import tracemalloc
+from typing import Dict, List, Tuple
+from statistics import mean, stdev, median
+
+import pytest
+from agent import get_agent
+from agent.base import Agent as BaseAgent
+from schema import SolverStrategy
+from schema.solve_request import SolveRequest
+from word_manager.word_manager import wordlist
+
+
+class PerformanceMetrics:
+    """Container for performance measurements."""
+    
+    def __init__(self, strategy: str):
+        self.strategy = strategy
+        self.times: List[float] = []
+        self.memory_peaks: List[float] = []
+        self.guesses_per_game: List[int] = []
+        self.solved_games = 0
+        self.total_games = 0
+        self.failures: List[str] = []
+    
+    def add_game(self, time_taken: float, memory_mb: float, guesses: int, solved: bool, answer: str):
+        """Record metrics from a single game."""
+        self.times.append(time_taken)
+        self.memory_peaks.append(memory_mb)
+        self.guesses_per_game.append(guesses)
+        self.total_games += 1
+        if solved:
+            self.solved_games += 1
+        else:
+            self.failures.append(answer)
+    
+    @property
+    def avg_time(self) -> float:
+        return mean(self.times) if self.times else 0
+    
+    @property
+    def avg_memory(self) -> float:
+        return mean(self.memory_peaks) if self.memory_peaks else 0
+    
+    @property
+    def avg_guesses(self) -> float:
+        return mean(self.guesses_per_game) if self.guesses_per_game else 0
+    
+    @property
+    def median_guesses(self) -> float:
+        return median(self.guesses_per_game) if self.guesses_per_game else 0
+    
+    @property
+    def success_rate(self) -> float:
+        return (self.solved_games / self.total_games * 100) if self.total_games else 0
+    
+    def summary(self) -> Dict:
+        """Get summary statistics."""
+        return {
+            "strategy": self.strategy,
+            "avg_time_ms": round(self.avg_time * 1000, 2),
+            "avg_memory_mb": round(self.avg_memory, 2),
+            "avg_guesses": round(self.avg_guesses, 2),
+            "median_guesses": self.median_guesses,
+            "success_rate": round(self.success_rate, 2),
+            "total_games": self.total_games,
+            "solved_games": self.solved_games,
+            "failed_games": self.total_games - self.solved_games,
+        }
+
+
+def simulate_game(agent, answer: str, max_attempts: int = 6) -> Tuple[bool, int, float, float]:
+    """
+    Simulate a complete Wordle game.
+    
+    Returns: (solved, num_guesses, time_taken, peak_memory_mb)
+    """
+    history = []
+    
+    # Start memory tracking
+    tracemalloc.start()
+    start_time = time.perf_counter()
+    
+    for attempt in range(max_attempts):
+        try:
+            # Get suggestion
+            guess = agent.solve(
+                SolveRequest(history=history)
+            ).next_guess
+            
+            if not guess or len(guess) != 5:
+                break
+            
+            # Generate feedback
+            feedback = BaseAgent._get_pattern(guess, answer)
+            
+            # Add to history
+            history.append({
+                "guess": guess,
+                "feedback": feedback
+            })
+            
+            # Check if solved
+            if feedback == "22222":  # All correct
+                end_time = time.perf_counter()
+                current, peak = tracemalloc.get_traced_memory()
+                tracemalloc.stop()
+                return True, len(history), end_time - start_time, peak / 1024 / 1024
+        
+        except Exception as e:
+            print(f"Error during game: {e}")
+            break
+    
+    # Game not solved
+    end_time = time.perf_counter()
+    try:
+        current, peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+        memory_mb = peak / 1024 / 1024
+    except:
+        memory_mb = 0
+    return False, len(history), end_time - start_time, memory_mb
+
+
+@pytest.fixture
+def test_words():
+    """Get a sample of words for testing."""
+    import random
+    # Use a fixed seed for reproducibility
+    random.seed(42)
+    all_words = wordlist.words
+    # Sample 50 words for faster testing (increase for production benchmarks)
+    return random.sample(all_words, min(50, len(all_words)))
+
+
+@pytest.fixture
+def all_strategies():
+    """All available solver strategies."""
+    return [
+        SolverStrategy.BETTER_ENTROPY,
+        SolverStrategy.ENTROPY,
+        SolverStrategy.FREQUENCY,
+        SolverStrategy.RANDOM,
+    ]
+
+
+def test_algorithm_performance(test_words, all_strategies):
+    """
+    Benchmark all algorithms across multiple games.
+    
+    This test runs each algorithm against the same set of words and collects:
+    - Time per game
+    - Memory usage
+    - Number of guesses
+    - Success rate
+    """
+    print("\n" + "=" * 80)
+    print("ALGORITHM PERFORMANCE BENCHMARK")
+    print("=" * 80)
+    print(f"Testing {len(test_words)} random words with max 6 attempts\n")
+    
+    results: Dict[str, PerformanceMetrics] = {}
+    
+    # Run benchmark for each strategy
+    for strategy in all_strategies:
+        print(f"\nTesting {strategy.value.upper()}...")
+        agent = get_agent(strategy)
+        metrics = PerformanceMetrics(strategy.value)
+        
+        for i, answer in enumerate(test_words, 1):
+            print(f"Game {i}/{len(test_words)}")
+            solved, guesses, time_taken, memory_mb = simulate_game(agent, answer)
+            print(f"  → {'Solved' if solved else 'Failed'} in {guesses} guesses, "
+                  f"time: {time_taken*1000:.2f}ms, memory: {memory_mb:.2f}MB")
+            metrics.add_game(time_taken, memory_mb, guesses, solved, answer)
+        
+        results[strategy.value] = metrics
+        summary = metrics.summary()
+        print(f"  ✓ Completed: {summary['solved_games']}/{summary['total_games']} solved")
+        print(f"    Avg time: {summary['avg_time_ms']:.2f}ms")
+        print(f"    Avg guesses: {summary['avg_guesses']:.2f}")
+    
+    # Print comparison table
+    print("\n" + "=" * 80)
+    print("RESULTS SUMMARY")
+    print("=" * 80)
+    print(f"{'Strategy':<20} {'Avg Time':<12} {'Avg Memory':<12} {'Avg Guesses':<12} {'Success Rate':<12}")
+    print("-" * 80)
+    
+    for strategy_name, metrics in results.items():
+        summary = metrics.summary()
+        print(f"{strategy_name:<20} {summary['avg_time_ms']:>8.2f}ms  "
+              f"{summary['avg_memory_mb']:>8.2f}MB  "
+              f"{summary['avg_guesses']:>10.2f}  "
+              f"{summary['success_rate']:>10.2f}%")
+    
+    # Generate visualizations
+    try:
+        generate_performance_charts(results, test_words)
+        print("\nPerformance charts saved to: tests/performance_charts.html")
+    except Exception as e:
+        print(f"\nCould not generate charts: {e}")
+    
+    # Print insights
+    print_performance_insights(results)
+    
+    # Assert all algorithms can solve at least some games
+    for strategy_name, metrics in results.items():
+        assert metrics.solved_games > 0, f"{strategy_name} failed to solve any games"
+
+
+def generate_performance_charts(results: Dict[str, PerformanceMetrics], test_words: List[str]):
+    """Generate HTML charts for visualization."""
+    try:
+        import plotly.graph_objects as go
+        from plotly.subplots import make_subplots
+    except ImportError:
+        print("\n️Install plotly for visualizations: uv pip install plotly")
+        return
+    
+    # Prepare data
+    strategies = list(results.keys())
+    avg_times = [results[s].avg_time * 1000 for s in strategies]  # Convert to ms
+    avg_memory = [results[s].avg_memory for s in strategies]
+    avg_guesses = [results[s].avg_guesses for s in strategies]
+    success_rates = [results[s].success_rate for s in strategies]
+    
+    # Create subplots
+    fig = make_subplots(
+        rows=2, cols=2,
+        subplot_titles=(
+            'Average Search Time (ms)',
+            'Average Memory Usage (MB)',
+            'Average Number of Guesses',
+            'Success Rate (%)'
+        ),
+        specs=[[{"type": "bar"}, {"type": "bar"}],
+               [{"type": "bar"}, {"type": "bar"}]]
+    )
+    
+    # Time chart
+    fig.add_trace(
+        go.Bar(x=strategies, y=avg_times, name="Time (ms)", marker_color='indianred'),
+        row=1, col=1
+    )
+    
+    # Memory chart
+    fig.add_trace(
+        go.Bar(x=strategies, y=avg_memory, name="Memory (MB)", marker_color='lightsalmon'),
+        row=1, col=2
+    )
+    
+    # Guesses chart
+    fig.add_trace(
+        go.Bar(x=strategies, y=avg_guesses, name="Avg Guesses", marker_color='lightblue'),
+        row=2, col=1
+    )
+    
+    # Success rate chart
+    fig.add_trace(
+        go.Bar(x=strategies, y=success_rates, name="Success Rate", marker_color='lightgreen'),
+        row=2, col=2
+    )
+    
+    # Update layout
+    fig.update_layout(
+        title_text=f"Solver Algorithm Performance Comparison ({len(test_words)} games)",
+        showlegend=False,
+        height=800
+    )
+    
+    # Add guess distribution box plot
+    fig_box = go.Figure()
+    for strategy_name, metrics in results.items():
+        fig_box.add_trace(go.Box(
+            y=metrics.guesses_per_game,
+            name=strategy_name,
+            boxmean='sd'
+        ))
+    
+    fig_box.update_layout(
+        title="Distribution of Guesses per Game",
+        yaxis_title="Number of Guesses",
+        xaxis_title="Strategy",
+        height=500
+    )
+    
+    # Save combined HTML
+    with open("tests/performance_charts.html", "w") as f:
+        f.write("<html><head><title>Performance Analysis</title></head><body>")
+        f.write("<h1>Wordly Solver Algorithm Performance Analysis</h1>")
+        f.write(fig.to_html(full_html=False, include_plotlyjs='cdn'))
+        f.write("<br><hr><br>")
+        f.write(fig_box.to_html(full_html=False, include_plotlyjs='cdn'))
+        f.write("</body></html>")
+
+
+def print_performance_insights(results: Dict[str, PerformanceMetrics]):
+    """Print analysis and insights from the benchmark results."""
+    print("\n" + "=" * 80)
+    print("INSIGHTS & ANALYSIS")
+    print("=" * 80)
+    
+    # Find best in each category
+    best_time = min(results.items(), key=lambda x: x[1].avg_time)
+    best_memory = min(results.items(), key=lambda x: x[1].avg_memory)
+    best_guesses = min(results.items(), key=lambda x: x[1].avg_guesses)
+    best_success = max(results.items(), key=lambda x: x[1].success_rate)
+    
+    print("\nBest Performers:")
+    print(f"  Fastest: {best_time[0]} ({best_time[1].avg_time*1000:.2f}ms avg)")
+    print(f"  Most Memory Efficient: {best_memory[0]} ({best_memory[1].avg_memory:.2f}MB avg)")
+    print(f"  Fewest Guesses: {best_guesses[0]} ({best_guesses[1].avg_guesses:.2f} avg)")
+    print(f"  Highest Success: {best_success[0]} ({best_success[1].success_rate:.1f}%)")
+    
+    print("\nKey Observations:")
+    
+    # Speed comparison
+    times = {k: v.avg_time for k, v in results.items()}
+    fastest = min(times.values())
+    slowest = max(times.values())
+    if slowest > 0:
+        speedup = slowest / fastest
+        print(f"  • The fastest algorithm is {speedup:.1f}x faster than the slowest")
+    
+    # Guess efficiency
+    guesses = {k: v.avg_guesses for k, v in results.items()}
+    best_guess = min(guesses.values())
+    worst_guess = max(guesses.values())
+    print(f"  • Guess count ranges from {best_guess:.2f} to {worst_guess:.2f} attempts")
+    
+    # Success rates
+    success_rates = {k: v.success_rate for k, v in results.items()}
+    if max(success_rates.values()) - min(success_rates.values()) > 10:
+        print(f"  • Significant variation in success rates ({min(success_rates.values()):.1f}% - {max(success_rates.values()):.1f}%)")
+    
+    # Strategy-specific insights
+    print("\n📋 Strategy Analysis:")
+    for name, metrics in results.items():
+        print(f"\n  {name.upper()}:")
+        if metrics.avg_guesses < 4:
+            print(f"    Excellent efficiency ({metrics.avg_guesses:.2f} avg guesses)")
+        elif metrics.avg_guesses < 5:
+            print(f"    Good efficiency ({metrics.avg_guesses:.2f} avg guesses)")
+        else:
+            print(f"    Could be more efficient ({metrics.avg_guesses:.2f} avg guesses)")
+        
+        if metrics.success_rate >= 95:
+            print(f"    Very reliable ({metrics.success_rate:.1f}% success)")
+        elif metrics.success_rate >= 85:
+            print(f"    Reliable ({metrics.success_rate:.1f}% success)")
+        else:
+            print(f"    Reliability concerns ({metrics.success_rate:.1f}% success)")
+        
+        if metrics.failures:
+            print(f"    Failed on {len(metrics.failures)} words: {', '.join(metrics.failures[:5])}")
+    
+    print("\n" + "=" * 80)
+
+
+if __name__ == "__main__":
+    # Allow running directly for quick tests
+    pytest.main([__file__, "-v", "-s"])

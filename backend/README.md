@@ -63,6 +63,9 @@ backend/
 # Install dependencies
 uv sync
 
+# Install dependencies (for develop and test)
+uv sync --all-extras
+
 # Run development server with hot reload
 uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
