@@ -74,6 +74,7 @@ export default function WordlyMain() {
         <SugesstionResult
           suggestion={hasSuggestion && suggestion ? suggestion : null}
           isLoading={isLoading}
+          onSuggestionApplied={clearSuggestion}
         />
       )}
     </div>

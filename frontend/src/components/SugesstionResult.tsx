@@ -2,11 +2,13 @@
 
 import { SuggestionCard } from "@/components/SuggestionCard";
 import type { AISuggestion } from "@/utils/api-utils";
+import { useGameStore } from "@/stores/game-store";
 
 type SugesstionResultProps = {
   suggestion: AISuggestion | null;
   isLoading: boolean;
   className?: string;
+  onSuggestionApplied?: () => void;
 };
 
 const Placeholder = ({ className }: { className?: string }) => (
@@ -35,7 +37,23 @@ const LoadingSkeleton = ({ className }: { className?: string }) => (
   </div>
 );
 
-export function SugesstionResult({ suggestion, isLoading, className }: SugesstionResultProps) {
+export function SugesstionResult({
+  suggestion,
+  isLoading,
+  className,
+  onSuggestionApplied,
+}: SugesstionResultProps) {
+  const applySuggestedGuess = useGameStore((state) => state.applySuggestedGuess);
+  const isGameOver = useGameStore((state) => state.isGameOver);
+  const isAutoplaying = useGameStore((state) => state.isAutoplaying);
+  const canApplySuggestion = !isGameOver && !isAutoplaying;
+
+  const handleApply = (word: string) => {
+    if (!canApplySuggestion) return;
+    applySuggestedGuess(word);
+    onSuggestionApplied?.();
+  };
+
   if (isLoading && !suggestion) {
     return <LoadingSkeleton className={className} />;
   }
@@ -56,6 +74,8 @@ export function SugesstionResult({ suggestion, isLoading, className }: Sugesstio
         badge={`${Math.round(suggestion.confidence * 100)}% match`}
         detail={suggestion.reasoning}
         footer={`${suggestion.remaining_count} word${suggestion.remaining_count !== 1 ? "s" : ""} still in play`}
+        onSelect={() => handleApply(suggestion.word)}
+        disabled={!canApplySuggestion}
       />
 
       {alternateWords.length > 0 && (
@@ -68,6 +88,8 @@ export function SugesstionResult({ suggestion, isLoading, className }: Sugesstio
               badge="Agent pick"
               tone="neutral"
               detail="Great follow-up if the top choice misses."
+              onSelect={() => handleApply(word)}
+              disabled={!canApplySuggestion}
             />
           ))}
         </div>

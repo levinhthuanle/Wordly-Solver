@@ -51,6 +51,7 @@ export interface GameStoreState {
     uptoIndex: number;
   }) => void;
   stopAutoplayMode: () => void;
+  applySuggestedGuess: (word: string) => void;
   
   // Actions
   startNewGame: (mode?: GameMode) => void;
@@ -242,6 +243,20 @@ export const useGameStore = create<GameStoreState>()(
       },
 
       stopAutoplayMode: () => set({ isAutoplaying: false }),
+
+      applySuggestedGuess: (word) => {
+        const { isGameOver, isAutoplaying } = get();
+        if (isGameOver || isAutoplaying) {
+          return;
+        }
+
+        const normalized = normalize(word).slice(0, GAME.WORD_LENGTH);
+        if (!normalized) {
+          return;
+        }
+
+        set({ currentGuess: normalized, invalidGuess: false });
+      },
     }),
     {
       name: "wordly-game", // persist basic game meta and score, not guesses
