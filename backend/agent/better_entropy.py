@@ -1,20 +1,13 @@
-"""
-Systematic exploration with frequency-based scoring.
-This algorithm uses letter and position frequency to choose the best guess.
-"""
-
+from . import Agent
+import math
 from pathlib import Path
 from typing import List, Sequence
-import math
-from agent.base import Agent
-from schema.solve_request import SolveRequest
 from schema.solve_request import GuessFeedback, SolveParameters, SolveRequest
 from schema.solve_response import AgentThought, SolveResponse
 
 
-
-class FrequencyAgent(Agent):
-    """Wordly solving agent based on frequency scoring."""
+class BetterEntropyAgent(Agent):
+    """Wordly solving agent based on entropy scoring."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -77,14 +70,14 @@ class FrequencyAgent(Agent):
         if len(candidates) <= 2:
             return list(candidates)
 
-        frequency_scores = {
-            candidate: self._calculate_frequency(candidate, candidates)
-            for candidate in candidates
+        entropy_scores = {
+            word: self._calculate_entropy(word, candidates)
+            for word in self.all_words
         }
 
         ranked = sorted(
             candidates,
-            key=lambda word: frequency_scores[word],
+            key=lambda word: entropy_scores[word],
             reverse=True,
         )
 
@@ -93,24 +86,19 @@ class FrequencyAgent(Agent):
             ranked = [word for word in ranked if word not in tried] or ranked
 
         return ranked
-    
-    def _calculate_frequency(self, candidate: str, candidates: Sequence[str]) -> float:
-        letter_position_counts = [{} for _ in range(5)]
-        total_candidates = len(candidates)
 
-        for word in candidates:
-            for i, letter in enumerate(word):
-                letter_position_counts[i][letter] = (
-                    letter_position_counts[i].get(letter, 0) + 1
-                )
+    def _calculate_entropy(self, guess: str, candidates: Sequence[str]) -> float:
+        pattern_counts: dict[str, int] = {}
+        for target in candidates:
+            pattern = self._get_pattern(guess, target)
+            pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
 
-        score = 0.0
-        for i, letter in enumerate(candidate):
-            frequency = letter_position_counts[i].get(letter, 0) / total_candidates
-            if frequency > 0:
-                score += math.log2(1 / frequency)
-
-        return score
+        total = len(candidates)
+        entropy = 0.0
+        for count in pattern_counts.values():
+            probability = count / total
+            entropy -= probability * math.log2(probability)
+        return entropy
 
     def _describe_decision(
         self,

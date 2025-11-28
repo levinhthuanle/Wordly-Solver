@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from .base import Agent
-from ..schema.solve_request import SolveParameters, SolveRequest
-from ..schema.solve_response import AgentThought, SolveResponse
+from schema.solve_request import SolveParameters, SolveRequest
+from schema.solve_response import AgentThought, SolveResponse
 
 class RandomAgent(Agent):
     """Wordly solving agent that selects guesses at random."""

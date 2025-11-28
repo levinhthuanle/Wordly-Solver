@@ -2,8 +2,8 @@ from . import Agent
 import math
 from pathlib import Path
 from typing import List, Sequence
-from ..schema.solve_request import GuessFeedback, SolveParameters, SolveRequest
-from ..schema.solve_response import AgentThought, SolveResponse
+from schema.solve_request import GuessFeedback, SolveParameters, SolveRequest
+from schema.solve_response import AgentThought, SolveResponse
 
 
 class EntropyAgent(Agent):
