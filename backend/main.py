@@ -3,8 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.api import router
-
+from api import router
 
 def create_app() -> FastAPI:
     """Application factory."""

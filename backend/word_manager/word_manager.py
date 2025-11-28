@@ -3,8 +3,6 @@
 import json
 from pathlib import Path
 from typing import List, Optional
-from algorithms import create_agent
-from algorithms.base_agent import GuessResult
 
 
 class WordListManager:
@@ -23,11 +21,11 @@ class WordListManager:
         if self._words is not None:
             return self._words
         
-        data_path = Path(__file__).parent / "data" / "wordlist.json"
+        data_path = Path("wordlist.json")
         
         if not data_path.exists():
             # Fallback to old words.txt for migration
-            txt_path = Path(__file__).parent.parent / "words.txt"
+            txt_path = Path("words.txt")
             if txt_path.exists():
                 with open(txt_path, 'r') as f:
                     self._words = [

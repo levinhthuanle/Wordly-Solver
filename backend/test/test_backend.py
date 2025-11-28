@@ -6,11 +6,12 @@ Run this to verify the new architecture works correctly.
 
 import sys
 from pathlib import Path
+from word_manager.word_manager import wordlist
+
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from backend.agent import wordlist, AgentSolver
 
 
 def test_wordlist():
