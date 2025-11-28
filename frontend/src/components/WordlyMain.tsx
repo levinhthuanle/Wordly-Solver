@@ -11,7 +11,6 @@ import { useGameController } from "@/hooks/useGameController";
 import { AISuggestionPanel } from "@/components/AISuggestionPanel";
 import { AttemptsCounter } from "@/components/AttemptsCounter";
 import { useGameStore } from "@/stores/game-store";
-import { GameActions } from "@/components/GameActions";
 import { useAISuggestions } from "@/hooks/useAISuggestions";
 import { SugesstionResult } from "@/components/SugesstionResult";
 
@@ -47,64 +46,53 @@ export default function WordlyMain() {
 
   const hasSuggestion = Boolean(suggestion) && !isLoading;
 
+  const panelContent = (
+    <div className="space-y-4">
+      <AISuggestionPanel
+        selectedAlgorithm={selectedAlgorithm}
+        setSelectedAlgorithm={setSelectedAlgorithm}
+        getSuggestion={getSuggestion}
+        clearSuggestion={clearSuggestion}
+        isLoading={isLoading}
+        error={error}
+        hasSuggestion={hasSuggestion}
+      />
+      {!error && (
+        <SugesstionResult
+          suggestion={hasSuggestion && suggestion ? suggestion : null}
+          isLoading={isLoading}
+        />
+      )}
+    </div>
+  );
+
   return (
-    <div className={LAYOUT.container}>
-      {/* Elegant header card */}
+    <div className={`${LAYOUT.container} space-y-6`}>
       <div className="card">
         <GameHeader onShowStats={() => setShowStats(true)} />
       </div>
 
-      {/* Container: Relative positioning is key here so children can be absolute */}
-      <div className="relative h-[calc(100vh-64px)] w-full overflow-hidden bg-gray-50">
-        
-        {/* FLOATING PANEL (Left) */}
-        {/* absolute: Takes it out of flow. 
-            left-4 top-4 bottom-4: Pins it to the left with a "floating" gap. 
-            z-20: Ensures it sits above the background. */}
-        <div className="absolute left-4 top-4 bottom-4 bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 overflow-hidden z-20 hidden xl:block">
-          {/* Scrollable internal container */}
-          <div className="h-full overflow-y-auto p-4 space-y-4">
-             <AISuggestionPanel
-               selectedAlgorithm={selectedAlgorithm}
-               setSelectedAlgorithm={setSelectedAlgorithm}
-               getSuggestion={getSuggestion}
-               clearSuggestion={clearSuggestion}
-               isLoading={isLoading}
-               error={error}
-               hasSuggestion={hasSuggestion}
-             />
-             {!error && (
-               <SugesstionResult
-                 suggestion={hasSuggestion && suggestion ? suggestion : null}
-                 isLoading={isLoading}
-               />
-             )}
-          </div>
-        </div>
+      <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
+        <aside className="hidden xl:flex flex-col">
+          {panelContent}
+        </aside>
 
-        {/* CENTER COLUMN: Main Game Area */}
-        {/* w-full h-full: Takes up the WHOLE screen space.
-            items-center: Centers the board perfectly in the middle of the viewport. */}
-        <main className="w-full h-full flex flex-col items-center justify-center relative z-10">
-          
-          {/* 1. The Board Area */}
-          <div className="flex-1 flex flex-col items-center justify-center min-h-0 w-full p-4">
-            <div className="card-elevated p-6 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col items-center">
-              <GameBoard />
-              <div className="mt-4">
-                <AttemptsCounter attempts={guesses.length} maxAttempts={6} />
-              </div>
-            </div>
+        <section className="flex flex-col gap-6">
+          <div className="card-elevated flex flex-col items-center gap-4 p-6">
+            <GameBoard />
+            <AttemptsCounter attempts={guesses.length} maxAttempts={6} />
           </div>
 
-          {/* 2. The Keyboard Area */}
           {isKeyboardVisible && (
-            <div className="w-full max-w-lg shrink-0 px-4 pb-6">
+            <div className="card-elevated px-4 pb-6 pt-4">
               <OnscreenKeyboard />
             </div>
           )}
+        </section>
+      </div>
 
-        </main>
+      <div className="space-y-4 xl:hidden">
+        {panelContent}
       </div>
 
       <GameOverModal

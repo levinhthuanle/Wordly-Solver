@@ -8,11 +8,15 @@ export const GameHeader = ( { onShowStats }: GameHeaderProps) => {
   const score = useGameStore((s: GameStoreState) => s.score);
   return (
     <header className="flex flex-col sm:flex-row justify-between items-center gap-4 p-6">
-      <Logo />
-      <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-        <GameActions onShowStats={onShowStats}/>
-        <ModeToggle />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+          <Logo />
+          <ModeToggle />
+        </div>
         <ScoreDisplay score={score} />
+      </div>
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <GameActions onShowStats={onShowStats}/>
       </div>
     </header>
   );
