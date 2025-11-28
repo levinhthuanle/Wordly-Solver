@@ -20,28 +20,27 @@ export async function loadWords(): Promise<string[]> {
       const isBackendHealthy = await solverAPI.healthCheck();
       
       if (isBackendHealthy) {
-        console.log('📚 Loading word list from backend...');
+        console.log('Loading word list from backend...');
         cachedWords = await solverAPI.getAllWords();
-        console.log(`✅ Loaded ${cachedWords.length} words from backend`);
+        console.log(`Loaded ${cachedWords.length} words from backend`);
         return cachedWords;
       }
       
       // Fallback: load from local file if backend fails
-      console.log('⚠️ Backend not available, trying local words.txt...');
-      const response = await fetch('/words.txt');
+      console.log('Backend not available, trying local wordlist.json...');
+      const response = await fetch('/wordlist.json');
       if (response.ok) {
-        const text = await response.text();
-        cachedWords = text
-          .split('\n')
-          .map(word => word.trim().toUpperCase())
+        const data: Array<{ word: string }> = await response.json();
+        cachedWords = data
+          .map(item => item.word.trim().toUpperCase())
           .filter(word => word.length === 5);
-        console.log(`✅ Loaded ${cachedWords.length} words from local file`);
+        console.log(`Loaded ${cachedWords.length} words from local file`);
         return cachedWords;
       }
       
       throw new Error('Both backend and local file failed');
     } catch (error) {
-      console.error('❌ Failed to load words:', error);
+      console.error('Failed to load words:', error);
       // Return empty array as last resort
       return [];
     } finally {

@@ -8,17 +8,18 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 # Copy uv from official image
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Copy dependency files and source code (needed for editable install)
-COPY pyproject.toml README.md ./
-COPY src/ ./src/
-COPY algorithms/ ./algorithms/
+# Copy all project files
+COPY . .
 
-# Install dependencies with uv
-RUN uv pip install --system --no-cache -e .
+# Sync dependencies with uv (creates venv and installs deps from uv.lock)
+RUN uv sync --frozen --no-dev
 
 # Expose port
 EXPOSE 8000
 
-# Add src to PYTHONPATH and run with uvicorn
-ENV PYTHONPATH=/app/src
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run with uvicorn using uv's managed environment
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
