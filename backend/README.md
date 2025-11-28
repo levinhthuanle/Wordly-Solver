@@ -1,62 +1,118 @@
-# Wordly Solver Backend
+# Wordly Solver - backend
 
-Modern FastAPI backend cho Wordly puzzle solver.
+A simple FastAPI-based backend for AI-powered Wordle solving with multiple strategic algorithms.
 
-## Cấu trúc
+## Project Structure
 
 ```
-Backend/
-├── src/
-│   └── backend/          # Main package
-│       ├── main.py       # FastAPI app
-│       ├── schema.py     # Pydantic models
-│       ├── agent.py      # Solver logic
-│       ├── api/
-│       │   └── routes.py # API endpoints
-│       └── data/
-│           └── wordlist.json
-├── algorithms/           # AI algorithms
-│   ├── dfs_algorithm.py
-│   ├── hill_climbing_algorithm.py
-│   └── simulated_annealing_algorithm.py
-├── pyproject.toml        # Dependencies
-└── uv.lock              # Lock file
-```
-
-## Quick Start
-
-```bash
-# Install dependencies với uv (khuyến nghị)
-uv pip install -e .
-
-# Hoặc với pip
-pip install -e .
-
-# Chạy development server
-uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+backend/
+├── agent/                  # Solver algorithms
+│   ├── __init__.py         # Factory for creating the agent. 
+│   ├── base.py             # Base agent interface
+│   ├── entropy.py          # Information theory-based solver
+│   ├── better_entropy.py   # Information theory-based solver
+│   ├── frequency.py        # Letter frequency solver
+│   └── random.py           # Random guess solver
+├── api/                    # API routes
+│   └── __init__.py         # Endpoint definitions
+├── schema/                 # Data models
+│   ├── game_state.py       # Game state types
+│   ├── solve_request.py    # Request schemas
+│   ├── solve_response.py   # Response schemas
+│   └── validate.py         # Validation schemas
+├── word_manager/           # Word list management
+│   ├── word_manager.py     # Word loading and filtering
+│   └── wordlist.json       # 10,000+ valid words
+├── main.py                 # FastAPI application entry point
+├── pyproject.toml          # Project dependencies and config
+└── Dockerfile              # Production container definition
 ```
 
 ## API Endpoints
 
-- `POST /api/solve` - Nhận gợi ý từ tiếp theo
-- `POST /api/validate` - Kiểm tra từ hợp lệ
-- `GET /api/words/all` - Lấy tất cả từ hợp lệ
-- `GET /health` - Health check
+### Core Endpoints
 
-Xem main README để biết chi tiết API documentation.
+- **`GET /`** - API information and available endpoints
+- **`GET /health`** - Health check for monitoring
 
-## Testing
+### Solver Endpoints
+
+- **`POST /api/solve`** - Get next word suggestion based on game state
+  - Strategies: `entropy`, `better_entropy`, `frequency`, `random`
+  - Supports guess history and feedback patterns
+  
+- **`POST /api/autoplay`** - Run complete automated game simulation
+  - Returns full transcript with reasoning for each step
+  - Configurable max attempts and answer
+
+### Word Management
+
+- **`POST /api/validate`** - Validate if a word is in the word list
+- **`GET /api/words/all`** - Retrieve complete word list (10,000+ words)
+
+## Development
+
+### Prerequisites
+
+- Python 3.11+
+- [uv](https://github.com/astral-sh/uv) package manager
+
+### Quick Start
 
 ```bash
-python test_backend.py
+# Install dependencies
+uv sync
+
+# Run development server with hot reload
+uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# Or activate venv and run directly
+source .venv/bin/activate  # Linux/Mac
+# .venv\Scripts\activate    # Windows
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+The API will be available at `http://localhost:8000`  
+Interactive docs at `http://localhost:8000/docs`
+
+### Available Strategies
+
+1. **Entropy** - Classic information theory approach
+2. **Better Entropy** - Optimized entropy with improved heuristics
+3. **Frequency** - Letter frequency-based guessing
+4. **Random** - Random valid word selection
+
 ## Docker
+(AI-generated. Check carefully)
+
+### Build and Run
 
 ```bash
-# Build và chạy
-docker-compose up -d --build backend
+# Build the image
+docker build -t wordly-solver-backend .
 
-# Xem logs
-docker logs wordly-solver-backend-1
+# Run the container
+docker run -p 8000:8000 wordly-solver-backend
+```
+
+### Docker Compose (Recommended)
+
+```bash
+# From project root with both frontend and backend
+docker-compose up --build
+```
+
+The Dockerfile uses:
+- Multi-stage builds for minimal image size
+- `uv` for fast dependency resolution
+- Health checks for container orchestration
+- Non-root user for security
+
+## Testing
+```bash
+# Run tests with pytest
+uv run pytest
+
+# Run with coverage
+uv run pytest --cov=. --cov-report=html
 ```

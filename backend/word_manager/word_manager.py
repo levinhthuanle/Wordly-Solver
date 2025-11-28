@@ -34,7 +34,7 @@ class WordListManager:
                         for word in f 
                         if len(word.strip()) == 5
                     ]
-                print(f"⚠️  Loaded {len(self._words)} words from legacy words.txt")
+                print(f"Loaded {len(self._words)} words from legacy words.txt")
                 return self._words
             raise FileNotFoundError("No wordlist found")
         

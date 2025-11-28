@@ -43,7 +43,7 @@ async def validate_word(request: ValidateRequest):
     is_valid = wordlist.is_valid(word_upper)
     
     return ValidateResponse(
-        word=request.word,
+        word=word_upper,
         valid=is_valid,
         message="Valid word" if is_valid else "Word not found in dictionary"
     )
