@@ -116,6 +116,12 @@ The Dockerfile uses:
 # Run tests with pytest
 uv run pytest
 
+# Run the performance test only (recommended since this takes a lot of time)
+uv run pytest tests -v -s tests/test_performance.py
+
+# Run the other tests
+uv run pytest tests -v -s --ignore=tests/test_performance.py
+
 # Run with coverage
 uv run pytest --cov=. --cov-report=html
 ```
