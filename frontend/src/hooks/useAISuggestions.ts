@@ -1,47 +1,105 @@
 "use client";
 
-import { useState } from "react";
+import { Dispatch, SetStateAction, useCallback, useEffect, useRef, useState } from "react";
 import { useGameStore } from "@/stores/game-store";
+import type { SolverStrategy, LetterState } from "@/types/types";
 import { solverAPI, type AISuggestion } from "@/utils/api-utils";
-import type { AlgorithmType } from "@/types/types";
 
-export function useAISuggestions() {
+type UseAISuggestionsResult = {
+  suggestion: AISuggestion | null;
+  isLoading: boolean;
+  error: string | null;
+  selectedAlgorithm: SolverStrategy;
+  setSelectedAlgorithm: Dispatch<SetStateAction<SolverStrategy>>;
+  getSuggestion: () => Promise<void>;
+  clearSuggestion: () => void;
+};
+
+type SuggestionRequest = {
+  guesses: string[];
+  evaluations: LetterState[][];
+  algorithm: SolverStrategy;
+  signal: AbortSignal;
+};
+
+const requestSuggestion = async ({
+  guesses,
+  evaluations,
+  algorithm,
+  signal,
+}: SuggestionRequest) =>
+  solverAPI.getSuggestion({ guesses, evaluations, algorithm, signal });
+
+export const useAISuggestions = (): UseAISuggestionsResult => {
+  const guesses = useGameStore((state) => state.guesses);
+  const evaluations = useGameStore((state) => state.evaluations);
+  const isGameOver = useGameStore((state) => state.isGameOver);
+
   const [suggestion, setSuggestion] = useState<AISuggestion | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedAlgorithm, setSelectedAlgorithm] = useState<AlgorithmType>('dfs');
-  
-  const { guesses, evaluations, isGameOver } = useGameStore();
+  const [selectedAlgorithm, setSelectedAlgorithm] = useState<SolverStrategy>("entropy");
+  const abortRef = useRef<AbortController | null>(null);
 
-  const getSuggestion = async () => {
-    if (isGameOver || isLoading) return;
-    
+  const cancelInFlight = useCallback(() => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => cancelInFlight();
+  }, [cancelInFlight]);
+
+  const getSuggestion = useCallback(async () => {
+    if (isGameOver || isLoading) {
+      return;
+    }
+
+    cancelInFlight();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setIsLoading(true);
     setError(null);
 
     try {
-      const result = await solverAPI.getSuggestion(
+      const result = await requestSuggestion({
         guesses,
         evaluations,
-        selectedAlgorithm
-      );
-      
+        algorithm: selectedAlgorithm,
+        signal: controller.signal,
+      });
       setSuggestion(result);
-      console.log(`🤖 AI Suggestion (${selectedAlgorithm}):`, result.word, `(${Math.round(result.confidence * 100)}% confidence)`);
-      
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to get suggestion';
-      setError(errorMessage);
-      console.error("AI Suggestion error:", errorMessage);
+      if (controller.signal.aborted) {
+        return;
+      }
+      console.error("AI Suggestion error:", err);
+      const message =
+        err instanceof Error ? err.message : "Failed to get suggestion";
+      setError(message);
     } finally {
-      setIsLoading(false);
+      if (!controller.signal.aborted) {
+        setIsLoading(false);
+        abortRef.current = null;
+      }
     }
-  };
+  }, [cancelInFlight, evaluations, guesses, isGameOver, isLoading, selectedAlgorithm]);
 
-  const clearSuggestion = () => {
+  const clearSuggestion = useCallback(() => {
+    cancelInFlight();
     setSuggestion(null);
     setError(null);
-  };
+    setIsLoading(false);
+  }, [cancelInFlight]);
+
+  useEffect(() => {
+    if (isGameOver) {
+      clearSuggestion();
+    }
+  }, [clearSuggestion, isGameOver]);
 
   return {
     suggestion,
@@ -52,4 +110,4 @@ export function useAISuggestions() {
     getSuggestion,
     clearSuggestion,
   };
-}
+};

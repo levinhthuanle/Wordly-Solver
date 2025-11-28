@@ -21,11 +21,12 @@ class WordListManager:
         if self._words is not None:
             return self._words
         
-        data_path = Path("wordlist.json")
+        base_dir = Path(__file__).resolve().parent
+        data_path = base_dir / "wordlist.json"
         
         if not data_path.exists():
             # Fallback to old words.txt for migration
-            txt_path = Path("words.txt")
+            txt_path = base_dir / "words.txt"
             if txt_path.exists():
                 with open(txt_path, 'r') as f:
                     self._words = [
@@ -39,7 +40,27 @@ class WordListManager:
         
         with open(data_path, 'r') as f:
             data = json.load(f)
-            self._words = [word.upper() for word in data.get("words", [])]
+
+        if isinstance(data, dict):
+            payload = data.get("words", [])
+        elif isinstance(data, list):
+            payload = data
+        else:  # pragma: no cover - safeguard for unexpected formats
+            raise ValueError("Unsupported word list format")
+
+        normalized: List[str] = []
+        for entry in payload:
+            if isinstance(entry, str):
+                normalized.append(entry.strip().upper())
+            elif isinstance(entry, dict) and "word" in entry:
+                word = entry["word"]
+                if isinstance(word, str):
+                    normalized.append(word.strip().upper())
+
+        if not normalized:
+            raise ValueError("Word list file is empty or malformed")
+
+        self._words = normalized
         
         print(f"✅ Loaded {len(self._words)} words from wordlist.json")
         return self._words

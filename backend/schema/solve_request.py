@@ -23,9 +23,10 @@ class GuessFeedback(BaseModel):
 
 class SolverStrategy(str, Enum):
     """Enumeration of available solver strategies."""
-
     ENTROPY = "entropy"
     RANDOM = "random"
+    FREQUENCY = "frequency"
+    BETTER_ENTROPY = "better_entropy"
 
 class SolveParameters(BaseModel):
     """Optional tuning parameters for the agent."""
