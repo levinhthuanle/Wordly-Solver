@@ -1,11 +1,16 @@
 import { useGameStore, GameStoreState } from "@/stores/game-store";
+import { GameActions } from "./GameActions";
 
-export const GameHeader = () => {
+interface GameHeaderProps {
+  onShowStats?: () => void;
+}
+export const GameHeader = ( { onShowStats }: GameHeaderProps) => {
   const score = useGameStore((s: GameStoreState) => s.score);
   return (
     <header className="flex flex-col sm:flex-row justify-between items-center gap-4 p-6">
       <Logo />
       <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+        <GameActions onShowStats={onShowStats}/>
         <ModeToggle />
         <ScoreDisplay score={score} />
       </div>

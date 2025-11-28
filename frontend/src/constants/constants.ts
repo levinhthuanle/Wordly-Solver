@@ -20,7 +20,7 @@ export const TILE_STYLES = {
 
 // Elegant layout classes with improved spacing
 export const LAYOUT = {
-  container: "w-full max-w-lg mx-auto px-6 py-8",
+  container: "w-full",
   header: "flex items-center justify-between py-6 border-b border-neutral-200/60 bg-white/80 backdrop-blur-sm",
   board: "flex flex-col items-center justify-center gap-2 my-12 animate-fade-in",
 } as const;
