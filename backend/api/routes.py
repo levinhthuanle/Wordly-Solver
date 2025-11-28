@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException
 from datetime import datetime, timezone
 
-from backend.schema import (
+from backend.backend.schema.schema import (
     SolveRequest,
     SolveResponse,
     ValidateRequest,
