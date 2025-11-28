@@ -15,6 +15,7 @@ import { useAISuggestions } from "@/hooks/useAISuggestions";
 import { SugesstionResult } from "@/components/SugesstionResult";
 import { AutoplayPanel } from "@/components/AutoplayPanel";
 import { useAutoplay } from "@/hooks/useAutoplay";
+import { ChartVisualizationPanel } from "@/components/ChartVisualizationPanel";
 
 const OnscreenKeyboard = dynamic(
   () => import("@/components/keyboard/OnscreenKeyboard"),
@@ -34,6 +35,7 @@ export default function WordlyMain() {
   const isGameOver = useGameStore((state) => state.isGameOver);
   const isKeyboardVisible = useGameStore((state) => state.isKeyboardVisible);
   const startNewGame = useGameStore((state) => state.startNewGame);
+  const evaluations = useGameStore((state) => state.evaluations);
 
   const [showStats, setShowStats] = useState(false);
 
@@ -110,7 +112,8 @@ export default function WordlyMain() {
           {aiPanelContent}
         </aside>
 
-        <aside className="order-3 xl:order-3">
+        <aside className="order-3 flex flex-col gap-4 xl:order-3">
+          <ChartVisualizationPanel guesses={guesses} evaluations={evaluations} />
           <AutoplayPanel autoplayState={autoplay} />
         </aside>
       </div>

@@ -30,6 +30,11 @@ export async function getRandomAnswer(): Promise<{ answer: string; id: string }>
   return { answer: ans, id };
 }
 
+export async function getWordListSnapshot(): Promise<string[]> {
+  await initializeWordList();
+  return [...wordsCache];
+}
+
 export function isValidWord(word: string): boolean {
   const upper = normalize(word);
   // Check if word exists in word list
