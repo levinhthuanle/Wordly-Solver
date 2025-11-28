@@ -70,13 +70,16 @@ class BetterEntropyAgent(Agent):
         if len(candidates) <= 2:
             return list(candidates)
 
+        # Calculate entropy for ALL words (not just candidates)
+        # This allows exploring words that eliminate more possibilities
         entropy_scores = {
-            word: self._calculate_entropy(word, candidates)
+            word: self._calculate_entropy_with_penalty(word, candidates)
             for word in self.all_words
         }
 
+        # Sort by entropy descending, including all words, not just candidates
         ranked = sorted(
-            candidates,
+            self.all_words,
             key=lambda word: entropy_scores[word],
             reverse=True,
         )
@@ -88,6 +91,7 @@ class BetterEntropyAgent(Agent):
         return ranked
 
     def _calculate_entropy(self, guess: str, candidates: Sequence[str]) -> float:
+        """Calculate information entropy for a guess."""
         pattern_counts: dict[str, int] = {}
         for target in candidates:
             pattern = self._get_pattern(guess, target)
@@ -99,6 +103,16 @@ class BetterEntropyAgent(Agent):
             probability = count / total
             entropy -= probability * math.log2(probability)
         return entropy
+    
+    def _calculate_entropy_with_penalty(self, guess: str, candidates: Sequence[str]) -> float:
+        """Calculate entropy with penalty for duplicate letters."""
+        base_entropy = self._calculate_entropy(guess, candidates)
+        
+        # Penalize duplicate letters (they provide less information)
+        unique_letters = len(set(guess))
+        duplicate_penalty = (5 - unique_letters) * 0.1
+        
+        return base_entropy - duplicate_penalty
 
     def _describe_decision(
         self,

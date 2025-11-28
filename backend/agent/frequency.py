@@ -95,20 +95,29 @@ class FrequencyAgent(Agent):
         return ranked
     
     def _calculate_frequency(self, candidate: str, candidates: Sequence[str]) -> float:
+        """Calculate frequency score - higher for more common letter positions."""
         letter_position_counts = [{} for _ in range(5)]
         total_candidates = len(candidates)
 
+        # Count letter frequencies at each position
         for word in candidates:
             for i, letter in enumerate(word):
                 letter_position_counts[i][letter] = (
                     letter_position_counts[i].get(letter, 0) + 1
                 )
 
+        # Score based on how common each letter is at its position
+        # Higher frequency = better guess (more likely to match)
         score = 0.0
+        seen_letters = set()
         for i, letter in enumerate(candidate):
             frequency = letter_position_counts[i].get(letter, 0) / total_candidates
-            if frequency > 0:
-                score += math.log2(1 / frequency)
+            score += frequency
+            
+            # Penalize duplicate letters
+            if letter in seen_letters:
+                score -= 0.1
+            seen_letters.add(letter)
 
         return score
 

@@ -88,6 +88,7 @@ class EntropyAgent(Agent):
         return ranked
 
     def _calculate_entropy(self, guess: str, candidates: Sequence[str]) -> float:
+        """Calculate information entropy for a guess."""
         pattern_counts: dict[str, int] = {}
         for target in candidates:
             pattern = self._get_pattern(guess, target)
@@ -98,6 +99,13 @@ class EntropyAgent(Agent):
         for count in pattern_counts.values():
             probability = count / total
             entropy -= probability * math.log2(probability)
+        
+        # Slight penalty for duplicate letters
+        unique_letters = len(set(guess))
+        if unique_letters < 5:
+            duplicate_penalty = (5 - unique_letters) * 0.05
+            entropy -= duplicate_penalty
+        
         return entropy
 
     def _describe_decision(
