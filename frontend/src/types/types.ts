@@ -64,6 +64,27 @@ export interface ValidateResponse {
   message: string;
 }
 
+export interface AutoplayStep {
+  guess: string;
+  feedback: string;
+  thoughts: AgentThought[];
+  remaining_candidates: number;
+}
+
+export interface AutoplayResponse {
+  answer: string;
+  solved: boolean;
+  attempts_used: number;
+  steps: AutoplayStep[];
+}
+
+export interface AutoplayRequestPayload {
+  answer?: string;
+  strategy: SolverStrategy;
+  max_attempts?: number;
+  allow_repeats?: boolean;
+}
+
 export interface AISuggestion {
   word: string;
   confidence: number;

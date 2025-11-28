@@ -3,6 +3,7 @@ from .solve_request import *
 from .solve_response import *
 from .game_state import *
 from .validate import *
+from .autoplay import *
 
 class HealthResponse(BaseModel):
     """Health check response."""

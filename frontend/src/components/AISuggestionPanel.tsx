@@ -41,7 +41,7 @@ export function AISuggestionPanel({
   })();
 
   return (
-    <div className="mt-6 w-full">
+    <div className="mt-8 w-full max-w-md">
       <section className="w-full rounded-2xl bg-white/85 p-6 shadow-soft ring-1 ring-neutral-200/70 backdrop-blur">
         <header className="flex flex-col gap-4">
           <div className="space-y-1">
@@ -57,14 +57,14 @@ export function AISuggestionPanel({
           </div>
 
           <div className="rounded-2xl border border-neutral-200 bg-neutral-50/80 p-4 text-sm text-neutral-700">
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="flex flex-col gap-1 text-xs font-medium text-neutral-500">
-                Strategy
+            <div className="flex flex-wrap items-left gap-3">
+              <label className="flex flex-col w-full gap-1 text-xs font-medium text-neutral-500">
+                  Strategy
                 <select
                   value={selectedAlgorithm}
                   onChange={(event) => setSelectedAlgorithm(event.target.value as SolverStrategy)}
                   disabled={isLoading}
-                  className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-800 shadow-soft transition focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-xl border border-neutral-200 bg-white fill-1 px-3 py-2 text-sm font-semibold text-neutral-800 shadow-soft transition focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {ALGORITHMS.map(({ value, label }) => (
                     <option key={value} value={value}>
@@ -73,8 +73,6 @@ export function AISuggestionPanel({
                   ))}
                 </select>
               </label>
-
-             
             </div>
           </div>
         </header>

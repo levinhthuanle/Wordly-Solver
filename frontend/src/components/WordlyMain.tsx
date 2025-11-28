@@ -5,7 +5,7 @@ import { GameBoard } from "@/components/GameBoard";
 import { GameOverModal } from "@/components/GameOverModal";
 import { GameHeader } from "@/components/GameHeader";
 import StatsModal from "@/components/StatsModal";
-import { LAYOUT } from "@/constants/constants";
+import { BUTTON, LAYOUT } from "@/constants/constants";
 import dynamic from "next/dynamic";
 import { useGameController } from "@/hooks/useGameController";
 import { AISuggestionPanel } from "@/components/AISuggestionPanel";
@@ -13,6 +13,8 @@ import { AttemptsCounter } from "@/components/AttemptsCounter";
 import { useGameStore } from "@/stores/game-store";
 import { useAISuggestions } from "@/hooks/useAISuggestions";
 import { SugesstionResult } from "@/components/SugesstionResult";
+import { AutoplayPanel } from "@/components/AutoplayPanel";
+import { useAutoplay } from "@/hooks/useAutoplay";
 
 const OnscreenKeyboard = dynamic(
   () => import("@/components/keyboard/OnscreenKeyboard"),
@@ -31,6 +33,7 @@ export default function WordlyMain() {
 
   const isGameOver = useGameStore((state) => state.isGameOver);
   const isKeyboardVisible = useGameStore((state) => state.isKeyboardVisible);
+  const startNewGame = useGameStore((state) => state.startNewGame);
 
   const [showStats, setShowStats] = useState(false);
 
@@ -44,9 +47,17 @@ export default function WordlyMain() {
     clearSuggestion,
   } = useAISuggestions();
 
+  const autoplay = useAutoplay();
+
   const hasSuggestion = Boolean(suggestion) && !isLoading;
 
-  const panelContent = (
+  const handleRetry = () => {
+    clearSuggestion();
+    autoplay.reset();
+    startNewGame();
+  };
+
+  const aiPanelContent = (
     <div className="space-y-4">
       <AISuggestionPanel
         selectedAlgorithm={selectedAlgorithm}
@@ -72,15 +83,20 @@ export default function WordlyMain() {
         <GameHeader onShowStats={() => setShowStats(true)} />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
-        <aside className="hidden xl:flex flex-col">
-          {panelContent}
-        </aside>
-
-        <section className="flex flex-col gap-6">
-          <div className="card-elevated flex flex-col items-center gap-4 p-6">
+      <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)_360px]">
+        <section className="order-1 flex flex-col gap-6 xl:order-2">
+          <div className="card-elevated flex flex-col items-center gap-5 p-6">
             <GameBoard />
-            <AttemptsCounter attempts={guesses.length} maxAttempts={6} />
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <AttemptsCounter attempts={guesses.length} maxAttempts={6} />
+              <button
+                type="button"
+                onClick={handleRetry}
+                className={`${BUTTON.secondary} px-4 py-2 text-sm leading-none`}
+              >
+                Retry
+              </button>
+            </div>
           </div>
 
           {isKeyboardVisible && (
@@ -89,10 +105,14 @@ export default function WordlyMain() {
             </div>
           )}
         </section>
-      </div>
 
-      <div className="space-y-4 xl:hidden">
-        {panelContent}
+        <aside className="order-2 flex flex-col gap-4 xl:order-1">
+          {aiPanelContent}
+        </aside>
+
+        <aside className="order-3 xl:order-3">
+          <AutoplayPanel autoplayState={autoplay} />
+        </aside>
       </div>
 
       <GameOverModal

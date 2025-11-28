@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { GAME } from "@/constants/constants";
-import { LetterState, KeyboardState } from "@/types/types";
+import { AutoplayStep, LetterState, KeyboardState } from "@/types/types";
 import {
   normalize,
   getDailyAnswer,
@@ -14,6 +14,15 @@ import {
 } from "@/utils/game-utils";
 
 type GameMode = "daily" | "random";
+
+const FEEDBACK_TO_STATE: Record<string, LetterState> = {
+  "2": "correct",
+  "1": "present",
+  "0": "absent",
+};
+
+const feedbackToStates = (feedback: string): LetterState[] =>
+  feedback.split("").map((digit) => FEEDBACK_TO_STATE[digit] ?? "absent");
 
 export interface GameStoreState {
   // Core game state
@@ -35,6 +44,13 @@ export interface GameStoreState {
   
   // UI State
   isKeyboardVisible: boolean;
+  isAutoplaying: boolean;
+  syncAutoplayProgress: (params: {
+    answer: string;
+    steps: AutoplayStep[];
+    uptoIndex: number;
+  }) => void;
+  stopAutoplayMode: () => void;
   
   // Actions
   startNewGame: (mode?: GameMode) => void;
@@ -63,6 +79,7 @@ export const useGameStore = create<GameStoreState>()(
       keyboard: {},
       score: 0,
       isKeyboardVisible: true,
+      isAutoplaying: false,
 
       startNewGame: async (mode) => {
         const desiredMode = mode ?? get().mode ?? "random";
@@ -81,12 +98,13 @@ export const useGameStore = create<GameStoreState>()(
           isWinner: false,
           invalidGuess: false,
           keyboard: {},
+          isAutoplaying: false,
         });
       },
 
       addLetter: (letter) => {
-        const { currentGuess, isGameOver } = get();
-        if (isGameOver) return;
+        const { currentGuess, isGameOver, isAutoplaying } = get();
+        if (isGameOver || isAutoplaying) return;
         if (!/^[a-zA-Z]$/.test(letter)) return;
         if (currentGuess.length >= GAME.WORD_LENGTH) return;
         set({
@@ -99,15 +117,15 @@ export const useGameStore = create<GameStoreState>()(
       },
 
       removeLetter: () => {
-        const { currentGuess, isGameOver } = get();
-        if (isGameOver) return;
+        const { currentGuess, isGameOver, isAutoplaying } = get();
+        if (isGameOver || isAutoplaying) return;
         if (currentGuess.length === 0) return;
         set({ currentGuess: currentGuess.slice(0, -1), invalidGuess: false });
       },
 
       submitGuess: () => {
-        const { currentGuess, answer, guesses, isGameOver } = get();
-        if (isGameOver) return;
+        const { currentGuess, answer, guesses, isGameOver, isAutoplaying } = get();
+        if (isGameOver || isAutoplaying) return;
         if (currentGuess.length !== GAME.WORD_LENGTH) {
           set({ invalidGuess: true });
           return;
@@ -156,6 +174,9 @@ export const useGameStore = create<GameStoreState>()(
       },
 
       handleKey: (key) => {
+        if (get().isAutoplaying) {
+          return;
+        }
         if (key === "Enter") {
           get().submitGuess();
           return;
@@ -172,6 +193,55 @@ export const useGameStore = create<GameStoreState>()(
       resetInvalid: () => set({ invalidGuess: false }),
 
       setKeyboardVisible: (visible: boolean) => set({ isKeyboardVisible: visible }),
+
+      syncAutoplayProgress: ({ answer, steps, uptoIndex }) => {
+        if (!steps.length) {
+          set({
+            answer: normalize(answer),
+            guesses: [],
+            evaluations: [],
+            currentGuess: "",
+            currentRow: 0,
+            isRevealing: false,
+            isWinner: false,
+            isGameOver: false,
+            invalidGuess: false,
+            keyboard: {},
+            isAutoplaying: true,
+          });
+          return;
+        }
+
+        const effectiveIndex = Math.min(uptoIndex, steps.length - 1);
+        const visibleSteps =
+          effectiveIndex >= 0 ? steps.slice(0, effectiveIndex + 1) : [];
+
+        const guesses = visibleSteps.map((step) => normalize(step.guess));
+        const evaluations = visibleSteps.map((step) => feedbackToStates(step.feedback));
+
+        let keyboard: KeyboardState = {};
+        guesses.forEach((guess, idx) => {
+          keyboard = mergeKeyboardState(keyboard, guess, evaluations[idx]);
+        });
+
+        const attemptsUsed = guesses.length;
+
+        set({
+          answer: normalize(answer),
+          guesses,
+          evaluations,
+          currentGuess: "",
+          currentRow: attemptsUsed,
+          isRevealing: false,
+          isWinner: false,
+          isGameOver: false,
+          invalidGuess: false,
+          keyboard,
+          isAutoplaying: true,
+        });
+      },
+
+      stopAutoplayMode: () => set({ isAutoplaying: false }),
     }),
     {
       name: "wordly-game", // persist basic game meta and score, not guesses

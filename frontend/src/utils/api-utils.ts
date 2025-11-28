@@ -1,5 +1,7 @@
 import type {
   AISuggestion,
+  AutoplayRequestPayload,
+  AutoplayResponse,
   LetterState,
   SolveHistoryEntry,
   SolveRequestPayload,
@@ -189,6 +191,23 @@ class SolverAPI {
 
     const data = await response.json();
     return data.words;
+  }
+
+  async runAutoplay(payload: AutoplayRequestPayload): Promise<AutoplayResponse> {
+    const response = await fetch(`${this.baseUrl}/autoplay`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(detail || "Autoplay failed");
+    }
+
+    return response.json();
   }
 }
 
