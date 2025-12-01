@@ -12,6 +12,7 @@ const STRATEGIES: { value: SolverStrategy; label: string }[] = [
   { value: "better_entropy", label: "Better Entropy" },
   { value: "frequency", label: "Frequency" },
   { value: "random", label: "Random" },
+  { value: "k_beam", label: "K-Beam" },
 ];
 
 type AutoplayPanelProps = {
