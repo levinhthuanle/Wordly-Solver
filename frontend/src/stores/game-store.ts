@@ -133,12 +133,13 @@ export const useGameStore = create<GameStoreState>()(
         }
 
         const guess = normalize(currentGuess);
-        
-        // Relaxed validation: only check word exists (warn but allow)
-        // This allows players to try any 5-letter combination
+
+        // Strict validation: block guesses that are not in the dictionary
         const isValid = isValidWord(guess);
         if (!isValid) {
-          console.warn(`⚠️ "${guess}" is not in the dictionary, but proceeding...`);
+          console.warn(`❌ "${guess}" is not in the dictionary.`);
+          set({ invalidGuess: true });
+          return;
         }
 
         const evals = evaluateGuess(answer, guess);
