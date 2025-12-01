@@ -24,7 +24,7 @@ export interface GameEndState {
   message: string;
 }
 
-export type SolverStrategy = 'entropy' | 'random' | 'frequency' | 'better_entropy';
+export type SolverStrategy = 'entropy' | 'random' | 'frequency' | 'better_entropy' | 'k_beam';
 
 export interface AgentThought {
   message: string;

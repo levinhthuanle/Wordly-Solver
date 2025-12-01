@@ -11,13 +11,16 @@ from .entropy import EntropyAgent
 from .random import RandomAgent
 from .frequency import FrequencyAgent
 from .better_entropy import BetterEntropyAgent
+from .k_beam import KBeamAgent
 
 _STRATEGY_FACTORIES: Dict[SolverStrategy, Type[Agent]] = {
     SolverStrategy.ENTROPY: EntropyAgent,
     SolverStrategy.RANDOM: RandomAgent,
     SolverStrategy.FREQUENCY: FrequencyAgent,
     SolverStrategy.BETTER_ENTROPY: BetterEntropyAgent,
+    SolverStrategy.K_BEAM: KBeamAgent,
 }
+
 
 # Cache and return agent instances based on strategy
 @lru_cache(maxsize=None)
@@ -46,6 +49,8 @@ __all__ = [
     "EntropyAgent",
     "RandomAgent",
     "FrequencyAgent",
+    "BetterEntropyAgent",
+    "KBeamAgent",
     "SolverStrategy",
     "get_agent",
 ]

@@ -11,9 +11,7 @@ from pydantic import BaseModel, Field
 class GuessFeedback(BaseModel):
     """Single guess entry with the encoded Wordle feedback pattern."""
 
-    guess: str = Field(
-        ..., min_length=5, max_length=5, description="Guessed word"
-    )
+    guess: str = Field(..., min_length=5, max_length=5, description="Guessed word")
     feedback: str = Field(
         ...,
         pattern=r"^[012]{5}$",
@@ -23,10 +21,13 @@ class GuessFeedback(BaseModel):
 
 class SolverStrategy(str, Enum):
     """Enumeration of available solver strategies."""
+
     ENTROPY = "entropy"
     RANDOM = "random"
     FREQUENCY = "frequency"
     BETTER_ENTROPY = "better_entropy"
+    K_BEAM = "k_beam"
+
 
 class SolveParameters(BaseModel):
     """Optional tuning parameters for the agent."""

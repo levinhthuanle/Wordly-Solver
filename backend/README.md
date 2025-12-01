@@ -80,10 +80,12 @@ Interactive docs at `http://localhost:8000/docs`
 
 ### Available Strategies
 
-1. **Entropy** - Classic information theory approach
-2. **Better Entropy** - Optimized entropy with improved heuristics
-3. **Frequency** - Letter frequency-based guessing
-4. **Random** - Random valid word selection
+1. **Random** - Random valid word selection
+2. **Frequency** - Letter frequency-based guessing
+3. **Entropy** - Classic information theory approach, performed on the candidate set
+4. **K-beam** - Entropy for the k best answers based on the frequency
+5. **Better Entropy** - Entropy with the same heuristic, but performed on the total dictionary
+
 
 ## Docker
 (AI-generated. Check carefully)

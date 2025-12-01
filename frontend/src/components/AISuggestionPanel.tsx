@@ -19,6 +19,7 @@ const ALGORITHMS: { value: SolverStrategy; label: string }[] = [
   { value: "frequency", label: "Frequency" },
   { value: "entropy", label: "Entropy" },
   { value: "better_entropy", label: "Better Entropy" },
+  { value: "k_beam", label: "K-Beam" },
 ];
 
 export function AISuggestionPanel({
