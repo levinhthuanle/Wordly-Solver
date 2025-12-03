@@ -1,4 +1,5 @@
 """API module."""
+
 """API route handlers."""
 
 from datetime import datetime, timezone
@@ -32,7 +33,7 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         words_count=len(wordlist.words),
-        timestamp=datetime.now(timezone.utc).isoformat()
+        timestamp=datetime.now(timezone.utc).isoformat(),
     )
 
 
@@ -41,11 +42,11 @@ async def validate_word(request: ValidateRequest):
     """Validate if a word exists in dictionary."""
     word_upper = request.word.strip().upper()
     is_valid = wordlist.is_valid(word_upper)
-    
+
     return ValidateResponse(
         word=word_upper,
         valid=is_valid,
-        message="Valid word" if is_valid else "Word not found in dictionary"
+        message="Valid word" if is_valid else "Word not found in dictionary",
     )
 
 
@@ -98,7 +99,7 @@ async def autoplay(request: AutoplayRequest):
         if not guess:
             break
 
-        feedback_pattern = BaseAgent._get_pattern(guess, answer)
+        feedback_pattern = BaseAgent.compute_feedback(guess, answer)
         attempt = GuessFeedback(guess=guess, feedback=feedback_pattern)
         history.append(attempt)
         steps.append(
@@ -121,11 +122,12 @@ async def autoplay(request: AutoplayRequest):
         steps=steps,
     )
 
+
 @router.get("/api/words/all")
 async def get_all_words():
     """Get complete word list for frontend validation."""
     return {
         "words": wordlist.words,
         "total": len(wordlist.words),
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }

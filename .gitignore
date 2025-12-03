@@ -80,3 +80,6 @@ REQUIREMENTS_STATUS.md
 !Backend/backend/data/wordlist.json
 !FrontEnd/public/words.txt
 !Backend/uv.lock
+
+# Ignore feedback matrix file
+feedback_matrix.npy

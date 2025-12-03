@@ -13,16 +13,31 @@ from schema.solve_response import AgentThought, SolveResponse
 class KBeamAgent(Agent):
     """Two-phase beam-search agent combining frequency and entropy heuristics."""
 
-    def __init__(self) -> None:
+    def __init__(self, beam_width: int = 50) -> None:
         super().__init__()
-        self.beam_width = 50
+        self.beam_width = beam_width
+        self.first_guess = "ROATE"
 
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
     def solve(self, request: SolveRequest) -> SolveResponse:
         parameters = request.parameters or SolveParameters()
+
         history = request.history
+        if not history:
+            opener = self.first_guess
+            return SolveResponse(
+                next_guess=opener,
+                suggestions=[opener][: parameters.max_suggestions],
+                remaining_candidates=len(self.all_words),
+                thoughts=[
+                    AgentThought(
+                        message="No prior guesses supplied; using default opener.",
+                        score=None,
+                    )
+                ],
+            )
 
         candidates = self._apply_history(history)
         remaining = len(candidates)

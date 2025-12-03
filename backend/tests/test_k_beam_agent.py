@@ -1,12 +1,12 @@
 """Unit tests for the KBeamAgent implementation."""
 
-from agent.k_beam import BeamConfig, KBeamAgent
+from agent.k_beam import KBeamAgent
 from schema.solve_request import GuessFeedback, SolveParameters, SolveRequest
 
 
-def _make_agent(words: list[str]) -> KBeamAgent:
+def _make_agent(words: list[str], beam_width: int = 50) -> KBeamAgent:
     """Create a KBeamAgent with the given word list and beam width."""
-    agent = KBeamAgent()
+    agent = KBeamAgent(beam_width=beam_width)
     agent.all_words = set(word.upper() for word in words)
     return agent
 
@@ -15,7 +15,7 @@ def test_kbeam_respects_beam_width():
     """Beam ranking should not exceed the configured beam width."""
 
     words = ["CRANE", "SLATE", "BLOOM", "PRIME"]
-    agent = _make_agent(words)
+    agent = _make_agent(words, beam_width=2)
 
     ranked = agent._rank_with_beam(
         candidates=sorted(agent.all_words),
