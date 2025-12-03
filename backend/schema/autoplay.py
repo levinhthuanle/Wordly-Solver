@@ -26,7 +26,6 @@ class AutoplayRequest(BaseModel):
     max_attempts: int = Field(
         default=6,
         ge=1,
-        le=10,
         description="Maximum number of guesses the bot will attempt.",
     )
     allow_repeats: bool = Field(
@@ -53,4 +52,3 @@ class AutoplayResponse(BaseModel):
     solved: bool
     attempts_used: int = Field(..., ge=0)
     steps: List[AutoplayStep] = Field(default_factory=list)
-

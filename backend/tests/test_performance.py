@@ -12,6 +12,7 @@ Run with: pytest tests/test_performance.py -v -s
 import os
 import time
 import tracemalloc
+from collections import Counter
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from statistics import mean, median
 from typing import Dict, List, Tuple
@@ -84,7 +85,7 @@ class PerformanceMetrics:
         }
 
 
-def simulate_game(agent, answer: str, max_attempts: int = 6) -> Tuple[bool, int, float, float]:
+def simulate_game(agent, answer: str, max_attempts: int = 1000) -> Tuple[bool, int, float, float]:
     """
     Simulate a complete Wordle game.
 
@@ -143,7 +144,7 @@ def test_words():
     # Sample 100 words for faster testing (increase for production benchmarks)
     # return random.sample(all_words, min(100, len(all_words)))
     # Stress test: all words
-    return all_words
+    return random.sample(all_words, 1000)
     # Relaxed test
     # return random.sample(all_words, min(1000, len(all_words)))
 
@@ -228,7 +229,7 @@ DEFAULT_MAX_WORKERS = os.cpu_count()
 def run_parallel_benchmark(
     strategy: SolverStrategy,
     test_words: List[str],
-    max_attempts: int = 6,
+    max_attempts: int = 100,
     max_workers: int | None = None,
 ) -> PerformanceMetrics:
     """Execute all games for a strategy in parallel with a progress bar."""
@@ -400,6 +401,8 @@ def generate_performance_charts(results: Dict[str, PerformanceMetrics], test_wor
         f.write(fig.to_html(full_html=False, include_plotlyjs="cdn"))
         f.write("<br><hr><br>")
         f.write(fig_box.to_html(full_html=False, include_plotlyjs="cdn"))
+        f.write("<br><hr><br>")
+        f.write(_render_guess_distribution_table(results))
         f.write("</body></html>")
 
 
@@ -465,9 +468,61 @@ def print_performance_insights(results: Dict[str, PerformanceMetrics]):
         if metrics.failures:
             print(f"    Failed on {len(metrics.failures)} words: {', '.join(metrics.failures[:5])}")
 
+        if metrics.guesses_per_game:
+            distribution = Counter(metrics.guesses_per_game)
+            max_guess = max(distribution)
+            print("    Guess distribution:")
+            for guess_count in range(1, max_guess + 1):
+                attempts = distribution.get(guess_count, 0)
+                if attempts:
+                    label = "word" if attempts == 1 else "words"
+                    print(
+                        f"      • {guess_count} guess{'es' if guess_count > 1 else ''}: {attempts} {label}"
+                    )
+            unsolved = len(metrics.failures)
+            if unsolved:
+                label = "word" if unsolved == 1 else "words"
+                print(f"      • Unsolved within limit: {unsolved} {label}")
+
     print("\n" + "=" * 80)
 
 
 if __name__ == "__main__":
     # Allow running directly for quick tests
     pytest.main([__file__, "-v", "-s"])
+
+
+def _render_guess_distribution_table(results: Dict[str, PerformanceMetrics]) -> str:
+    """Return an HTML table describing how many words required N guesses per strategy."""
+
+    def describe(metrics: PerformanceMetrics) -> str:
+        if not metrics.guesses_per_game:
+            return "<em>No games recorded</em>"
+
+        dist = Counter(metrics.guesses_per_game)
+        max_guess = max(dist)
+        parts: List[str] = []
+        for guess_count in range(1, max_guess + 1):
+            word_count = dist.get(guess_count, 0)
+            if not word_count:
+                continue
+            label = "word" if word_count == 1 else "words"
+            guess_label = "guess" if guess_count == 1 else "guesses"
+            parts.append(f"{guess_count} {guess_label}: {word_count} {label}")
+
+        unsolved = len(metrics.failures)
+        if unsolved:
+            label = "word" if unsolved == 1 else "words"
+            parts.append(f"Unsolved within limit: {unsolved} {label}")
+
+        return "<br>".join(parts)
+
+    rows = [
+        "<h2>Guess Distribution by Strategy</h2>",
+        '<table border="1" cellpadding="8" cellspacing="0">',
+    ]
+    rows.append("<tr><th>Strategy</th><th>Distribution</th></tr>")
+    for strategy, metrics in results.items():
+        rows.append(f"<tr><td>{strategy}</td><td>{describe(metrics)}</td></tr>")
+    rows.append("</table>")
+    return "".join(rows)

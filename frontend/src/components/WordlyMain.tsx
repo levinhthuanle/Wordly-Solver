@@ -36,6 +36,7 @@ export default function WordlyMain() {
   const isKeyboardVisible = useGameStore((state) => state.isKeyboardVisible);
   const startNewGame = useGameStore((state) => state.startNewGame);
   const evaluations = useGameStore((state) => state.evaluations);
+  const boardRows = useGameStore((state) => state.boardRows);
 
   const [showStats, setShowStats] = useState(false);
 
@@ -91,7 +92,7 @@ export default function WordlyMain() {
           <div className="card-elevated flex flex-col items-center gap-5 p-6">
             <GameBoard />
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:gap-4">
-              <AttemptsCounter attempts={guesses.length} maxAttempts={6} />
+              <AttemptsCounter attempts={guesses.length} maxAttempts={boardRows} />
               <button
                 type="button"
                 onClick={handleRetry}

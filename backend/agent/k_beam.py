@@ -107,15 +107,37 @@ class KBeamAgent(Agent):
         return ranked
 
     def _letter_frequency_scores(self, candidates: Sequence[str]) -> Dict[str, float]:
-        letter_counts: Counter[str] = Counter()
-        for word in candidates:
-            letter_counts.update(set(word))
+        position_counts = self._build_position_counts(candidates)
+        total_candidates = len(candidates)
+        if total_candidates == 0:
+            return {word: 0.0 for word in self.all_words}
 
         scores: Dict[str, float] = {}
         for word in self.all_words:
-            unique_letters = set(word)
-            scores[word] = sum(letter_counts.get(letter, 0) for letter in unique_letters)
+            scores[word] = self._score_candidate(word, position_counts, total_candidates)
         return scores
+
+    def _build_position_counts(self, candidates: Sequence[str]) -> List[Counter[str]]:
+        counts: List[Counter[str]] = [Counter() for _ in range(5)]
+        for word in candidates:
+            for idx, letter in enumerate(word):
+                counts[idx][letter] += 1
+        return counts
+
+    def _score_candidate(
+        self,
+        candidate: str,
+        position_counts: Sequence[Counter[str]],
+        total_candidates: int,
+    ) -> float:
+        score = 0.0
+        seen_letters = set()
+        for idx, letter in enumerate(candidate):
+            score += position_counts[idx].get(letter, 0) / total_candidates
+            if letter in seen_letters:
+                score -= 0.1
+            seen_letters.add(letter)
+        return score
 
     def _batched_entropy_scores(
         self,

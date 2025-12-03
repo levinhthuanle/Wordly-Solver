@@ -74,7 +74,7 @@ export function AutoplayPanel({ autoplayState }: AutoplayPanelProps) {
     if (Number.isNaN(parsed)) {
       return;
     }
-    const clamped = Math.max(1, Math.min(10, parsed));
+    const clamped = Math.max(1, parsed);
     setMaxAttempts(clamped);
   };
 
@@ -168,7 +168,6 @@ export function AutoplayPanel({ autoplayState }: AutoplayPanelProps) {
           <input
             type="number"
             min={1}
-            max={10}
             value={maxAttempts}
             onChange={(event) => handleAttemptsChange(event.target.value)}
             disabled={isBusy}

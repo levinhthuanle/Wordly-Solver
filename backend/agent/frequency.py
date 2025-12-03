@@ -3,11 +3,10 @@ Systematic exploration with frequency-based scoring.
 This algorithm uses letter and position frequency to choose the best guess.
 """
 
-from pathlib import Path
-from typing import List, Sequence
-import math
+from collections import Counter
+from typing import Dict, List, Sequence
+
 from agent.base import Agent
-from schema.solve_request import SolveRequest
 from schema.solve_request import GuessFeedback, SolveParameters, SolveRequest
 from schema.solve_response import AgentThought, SolveResponse
 
@@ -77,8 +76,11 @@ class FrequencyAgent(Agent):
         if len(candidates) <= 2:
             return list(candidates)
 
+        position_counts = self._build_position_counts(candidates)
+        total_candidates = len(candidates)
         frequency_scores = {
-            candidate: self._calculate_frequency(candidate, candidates) for candidate in candidates
+            candidate: self._score_candidate(candidate, position_counts, total_candidates)
+            for candidate in candidates
         }
 
         ranked = sorted(
@@ -93,25 +95,31 @@ class FrequencyAgent(Agent):
 
         return ranked
 
-    def _calculate_frequency(self, candidate: str, candidates: Sequence[str]) -> float:
-        """Calculate frequency score - higher for more common letter positions."""
-        letter_position_counts = [{} for _ in range(5)]
-        total_candidates = len(candidates)
-
-        # Count letter frequencies at each position
+    def _build_position_counts(self, candidates: Sequence[str]) -> List[Dict[str, int]]:
+        counts: List[Dict[str, int]] = [Counter() for _ in range(5)]
         for word in candidates:
-            for i, letter in enumerate(word):
-                letter_position_counts[i][letter] = letter_position_counts[i].get(letter, 0) + 1
+            for idx, letter in enumerate(word):
+                counts[idx][letter] += 1
+        return counts
 
-        # Score based on how common each letter is at its position
-        # Higher frequency = better guess (more likely to match)
+    def _score_candidate(
+        self,
+        candidate: str,
+        position_counts: Sequence[Dict[str, int]],
+        total_candidates: int,
+    ) -> float:
+        """Score a word using precomputed position frequencies."""
+
+        if total_candidates == 0:
+            return 0.0
+
         score = 0.0
         seen_letters = set()
-        for i, letter in enumerate(candidate):
-            frequency = letter_position_counts[i].get(letter, 0) / total_candidates
-            score += frequency
+        for idx, letter in enumerate(candidate):
+            letter_freq = position_counts[idx].get(letter, 0)
+            score += letter_freq / total_candidates
 
-            # Penalize duplicate letters
+            # Penalize duplicate letters to encourage broader coverage.
             if letter in seen_letters:
                 score -= 0.1
             seen_letters.add(letter)

@@ -31,6 +31,7 @@ export interface GameStoreState {
   evaluations: LetterState[][]; // per-guess evaluations
   currentGuess: string;
   currentRow: number;
+  boardRows: number;
   isRevealing: boolean;
   isGameOver: boolean;
   isWinner: boolean;
@@ -71,6 +72,7 @@ export const useGameStore = create<GameStoreState>()(
       evaluations: [],
       currentGuess: "",
       currentRow: 0,
+      boardRows: GAME.MAX_ATTEMPTS,
       isRevealing: false,
       isGameOver: false,
       isWinner: false,
@@ -204,6 +206,8 @@ export const useGameStore = create<GameStoreState>()(
             evaluations: [],
             currentGuess: "",
             currentRow: 0,
+            boardRows: GAME.MAX_ATTEMPTS,
+            boardRows: GAME.MAX_ATTEMPTS,
             isRevealing: false,
             isWinner: false,
             isGameOver: false,
@@ -227,6 +231,7 @@ export const useGameStore = create<GameStoreState>()(
         });
 
         const attemptsUsed = guesses.length;
+        const plannedRows = Math.max(GAME.MAX_ATTEMPTS, steps.length);
 
         set({
           answer: normalize(answer),
@@ -234,6 +239,7 @@ export const useGameStore = create<GameStoreState>()(
           evaluations,
           currentGuess: "",
           currentRow: attemptsUsed,
+          boardRows: plannedRows,
           isRevealing: false,
           isWinner: false,
           isGameOver: false,

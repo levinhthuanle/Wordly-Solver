@@ -52,9 +52,10 @@ const GameRow: FC<{ rowIndex: number }> = ({ rowIndex }) => {
 };
 
 export const GameBoard: FC = () => {
+  const boardRows = useGameStore((state) => state.boardRows);
   return (
     <div className="flex flex-col gap-1.5 p-4">
-      {[...Array(GAME.MAX_ATTEMPTS)].map((_, rowIndex) => (
+      {[...Array(boardRows)].map((_, rowIndex) => (
         <GameRow key={rowIndex} rowIndex={rowIndex} />
       ))}
     </div>

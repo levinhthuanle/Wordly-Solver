@@ -30,6 +30,18 @@ export function useGameController() {
       startNewGame("random");
     }
     const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target) {
+        const tagName = target.tagName;
+        const isFormField =
+          target.isContentEditable ||
+          tagName === "INPUT" ||
+          tagName === "TEXTAREA" ||
+          tagName === "SELECT";
+        if (isFormField) {
+          return;
+        }
+      }
       handleKey(event.key);
     };
     window.addEventListener("keydown", handleKeyDown);
