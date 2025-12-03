@@ -207,7 +207,6 @@ export const useGameStore = create<GameStoreState>()(
             currentGuess: "",
             currentRow: 0,
             boardRows: GAME.MAX_ATTEMPTS,
-            boardRows: GAME.MAX_ATTEMPTS,
             isRevealing: false,
             isWinner: false,
             isGameOver: false,

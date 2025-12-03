@@ -144,7 +144,7 @@ def test_words():
     # Sample 100 words for faster testing (increase for production benchmarks)
     # return random.sample(all_words, min(100, len(all_words)))
     # Stress test: all words
-    return random.sample(all_words, 1000)
+    return all_words
     # Relaxed test
     # return random.sample(all_words, min(1000, len(all_words)))
 

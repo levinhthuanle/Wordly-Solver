@@ -1,18 +1,28 @@
-FROM python:3.11-slim
+FROM python:3.13.10-slim-trixie
+
+ENV UV_HOME="/root/.local/bin" \
+    PATH="/root/.local/bin:$PATH"
+
+# Install curl for health checks and download certificates for uv installer
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and install uv
+ADD https://astral.sh/uv/install.sh /tmp/uv-installer.sh
+RUN sh /tmp/uv-installer.sh \
+    && rm /tmp/uv-installer.sh
 
 WORKDIR /app
 
-# Install curl for healthcheck
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Copy lock files (and README needed for build metadata) first to leverage cache
+COPY pyproject.toml uv.lock README.md ./
 
-# Copy uv from official image
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
-
-# Copy all project files
-COPY . .
-
-# Sync dependencies with uv (creates venv and installs deps from uv.lock)
+# Install dependencies into the managed virtualenv
 RUN uv sync --frozen --no-dev
+
+# Copy application source
+COPY . .
 
 # Expose port
 EXPOSE 8000

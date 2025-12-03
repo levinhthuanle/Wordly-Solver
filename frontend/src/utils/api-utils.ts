@@ -144,6 +144,8 @@ class SolverAPI {
     };
 
     const response = await this.requestAISuggestions(payload, signal);
+    
+    console.log("Solver response:", response);
 
     const remaining =
       typeof response.remaining_candidates === "number"

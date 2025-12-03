@@ -1,19 +1,19 @@
-"use client";
-
 import { memo, useEffect, useMemo, useState } from "react";
 import { Chart } from "react-chartjs-2";
 import {
-    Chart as ChartJS,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Tooltip,
-    Legend,
-    ChartOptions,
-    ChartData,
-    PointElement,
-    LineElement,
-    ChartDataset,
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend,
+  ChartOptions,
+  ChartData,
+  ChartDataset,
+  BarController,
+  LineController,
 } from "chart.js";
 import { LetterState } from "@/types/types";
 import { getWordListSnapshot } from "@/utils/game-utils";
@@ -24,6 +24,8 @@ ChartJS.register(
   BarElement,
   PointElement,
   LineElement,
+  BarController,
+  LineController,
   Tooltip,
   Legend
 );
