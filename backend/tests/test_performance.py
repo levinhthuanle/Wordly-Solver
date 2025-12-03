@@ -144,6 +144,8 @@ def test_words():
     # return random.sample(all_words, min(100, len(all_words)))
     # Stress test: all words
     return all_words
+    # Relaxed test
+    # return random.sample(all_words, min(1000, len(all_words)))
 
 
 @pytest.fixture
@@ -151,11 +153,11 @@ def all_strategies():
     """All available solver strategies."""
     # BETTER_ENTROPY is currently disabled due to performance issues
     return [
+        SolverStrategy.BETTER_ENTROPY,
         SolverStrategy.RANDOM,
         SolverStrategy.FREQUENCY,
         SolverStrategy.ENTROPY,
         SolverStrategy.K_BEAM,
-        # SolverStrategy.BETTER_ENTROPY,
     ]
 
 
@@ -220,7 +222,7 @@ def test_algorithm_performance(test_words, all_strategies):
         assert metrics.solved_games > 0, f"{strategy_name} failed to solve any games"
 
 
-DEFAULT_MAX_WORKERS = max(1, min(8, (os.cpu_count() or 1)))
+DEFAULT_MAX_WORKERS = os.cpu_count()
 
 
 def run_parallel_benchmark(

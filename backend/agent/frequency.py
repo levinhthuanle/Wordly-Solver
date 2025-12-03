@@ -12,13 +12,13 @@ from schema.solve_request import GuessFeedback, SolveParameters, SolveRequest
 from schema.solve_response import AgentThought, SolveResponse
 
 
-
 class FrequencyAgent(Agent):
     """Wordly solving agent based on frequency scoring."""
 
     def __init__(self) -> None:
         super().__init__()
-        self.first_guess = "ROATE"
+        self.first_guess = "TARES"
+
     """Agent implementation powering Wordly solving endpoints."""
 
     def solve(self, request: SolveRequest) -> SolveResponse:
@@ -78,8 +78,7 @@ class FrequencyAgent(Agent):
             return list(candidates)
 
         frequency_scores = {
-            candidate: self._calculate_frequency(candidate, candidates)
-            for candidate in candidates
+            candidate: self._calculate_frequency(candidate, candidates) for candidate in candidates
         }
 
         ranked = sorted(
@@ -93,7 +92,7 @@ class FrequencyAgent(Agent):
             ranked = [word for word in ranked if word not in tried] or ranked
 
         return ranked
-    
+
     def _calculate_frequency(self, candidate: str, candidates: Sequence[str]) -> float:
         """Calculate frequency score - higher for more common letter positions."""
         letter_position_counts = [{} for _ in range(5)]
@@ -102,9 +101,7 @@ class FrequencyAgent(Agent):
         # Count letter frequencies at each position
         for word in candidates:
             for i, letter in enumerate(word):
-                letter_position_counts[i][letter] = (
-                    letter_position_counts[i].get(letter, 0) + 1
-                )
+                letter_position_counts[i][letter] = letter_position_counts[i].get(letter, 0) + 1
 
         # Score based on how common each letter is at its position
         # Higher frequency = better guess (more likely to match)
@@ -113,7 +110,7 @@ class FrequencyAgent(Agent):
         for i, letter in enumerate(candidate):
             frequency = letter_position_counts[i].get(letter, 0) / total_candidates
             score += frequency
-            
+
             # Penalize duplicate letters
             if letter in seen_letters:
                 score -= 0.1

@@ -1,7 +1,8 @@
+from typing import Dict, Iterable, List, Sequence
+
+import numpy as np
+
 from . import Agent
-import math
-from pathlib import Path
-from typing import List, Sequence
 from schema.solve_request import GuessFeedback, SolveParameters, SolveRequest
 from schema.solve_response import AgentThought, SolveResponse
 
@@ -12,6 +13,11 @@ class BetterEntropyAgent(Agent):
     def __init__(self) -> None:
         super().__init__()
         self.first_guess = "ROATE"
+        self._ordered_words: List[str] = list(self._word_manager.words)
+        self.all_words = set(self._ordered_words)  # ensure base set stays aligned
+        self._pattern_space = 3**5  # 243 possible feedback codes for 5 letters
+        self._batch_size = 64
+
     """Agent implementation powering Wordly solving endpoints."""
 
     def solve(self, request: SolveRequest) -> SolveResponse:
@@ -72,47 +78,19 @@ class BetterEntropyAgent(Agent):
 
         # Calculate entropy for ALL words (not just candidates)
         # This allows exploring words that eliminate more possibilities
-        entropy_scores = {
-            word: self._calculate_entropy_with_penalty(word, candidates)
-            for word in self.all_words
-        }
+        entropy_scores = self._batched_entropy_scores(self._ordered_words, candidates)
 
         # Sort by entropy descending, including all words, not just candidates
         ranked = sorted(
-            self.all_words,
+            self._ordered_words,
             key=lambda word: entropy_scores[word],
             reverse=True,
         )
 
         if not parameters.allow_repeats:
             tried = {entry.guess.upper() for entry in history}
-            ranked = [word for word in ranked if word not in tried] or ranked
-
+            ranked = [word for word in ranked if word not in tried]
         return ranked
-
-    def _calculate_entropy(self, guess: str, candidates: Sequence[str]) -> float:
-        """Calculate information entropy for a guess."""
-        pattern_counts: dict[str, int] = {}
-        for target in candidates:
-            pattern = self._get_pattern(guess, target)
-            pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
-
-        total = len(candidates)
-        entropy = 0.0
-        for count in pattern_counts.values():
-            probability = count / total
-            entropy -= probability * math.log2(probability)
-        return entropy
-    
-    def _calculate_entropy_with_penalty(self, guess: str, candidates: Sequence[str]) -> float:
-        """Calculate entropy with penalty for duplicate letters."""
-        base_entropy = self._calculate_entropy(guess, candidates)
-        
-        # Penalize duplicate letters (they provide less information)
-        unique_letters = len(set(guess))
-        duplicate_penalty = (5 - unique_letters) * 0.1
-        
-        return base_entropy - duplicate_penalty
 
     def _describe_decision(
         self,
@@ -150,3 +128,51 @@ class BetterEntropyAgent(Agent):
             )
 
         return thoughts
+
+    def _batched_entropy_scores(
+        self,
+        guesses: Iterable[str],
+        candidates: Sequence[str],
+    ) -> Dict[str, float]:
+        guess_list = [word.upper() for word in guesses]
+        candidate_list = [word.upper() for word in candidates]
+        if not guess_list or not candidate_list:
+            return {word: 0.0 for word in guess_list}
+
+        candidate_indices = self._word_manager.words_to_indices(candidate_list)
+        guess_indices = self._word_manager.words_to_indices(guess_list)
+
+        scores: Dict[str, float] = {}
+        chunk_size = max(1, self._batch_size)
+        for start in range(0, len(guess_list), chunk_size):
+            chunk_words = guess_list[start : start + chunk_size]
+            chunk_indices = guess_indices[start : start + chunk_size]
+            codes = self._word_manager.feedback_codes(chunk_indices, candidate_indices)
+            entropies = self._entropy_from_codes(codes)
+            for word, base_entropy in zip(chunk_words, entropies):
+                scores[word] = base_entropy - self._duplicate_penalty(word)
+
+        return scores
+
+    def _entropy_from_codes(self, codes: np.ndarray) -> np.ndarray:
+        if codes.size == 0:
+            return np.zeros(codes.shape[0])
+
+        num_rows = codes.shape[0]
+        offsets = (np.arange(num_rows, dtype=np.int64) * self._pattern_space)[:, None]
+        flattened = codes.astype(np.int64, copy=False) + offsets
+        hist = np.bincount(flattened.ravel(), minlength=num_rows * self._pattern_space).reshape(
+            num_rows, self._pattern_space
+        )
+        hist = hist.astype(np.float64, copy=False)
+
+        totals = hist.sum(axis=1, keepdims=True)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            probs = np.divide(hist, totals, out=np.zeros_like(hist), where=totals != 0)
+            entropy = -np.sum(np.where(probs > 0, probs * np.log2(probs), 0.0), axis=1)
+        return entropy
+
+    @staticmethod
+    def _duplicate_penalty(guess: str) -> float:
+        unique_letters = len(set(guess))
+        return (5 - unique_letters) * 0.1

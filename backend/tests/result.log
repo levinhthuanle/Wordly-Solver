@@ -1,0 +1,170 @@
+○ uv run pytest -v -s tests/test_performance.py
+================================================================================================ test session starts =================================================================================================
+platform linux -- Python 3.13.5, pytest-9.0.1, pluggy-1.6.0 -- /home/tuthanh/Coding/AI/Wordly-Solver/backend/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/tuthanh/Coding/AI/Wordly-Solver/backend
+configfile: pyproject.toml
+plugins: anyio-4.11.0
+collected 1 item                                                                                                                                                                                                     
+
+tests/test_performance.py::test_algorithm_performance ✅ Loaded 12972 words from wordlist.json
+
+================================================================================
+ALGORITHM PERFORMANCE BENCHMARK
+================================================================================
+Testing 1000 random words with max 6 attempts
+
+
+Testing BETTER_ENTROPY (parallel)...
+  → Spawning 12 worker(s) for 1000 games
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+[BETTER_ENTROPY] |██████████████████████████████| Solved 1000/1000 (100.0%) Elapsed  392.3s ETA    0.0s
+  ✓ Completed: 1000/1000 solved
+    Avg time: 4695.39ms
+    Avg guesses: 4.20
+
+Testing RANDOM (parallel)...
+  → Spawning 12 worker(s) for 1000 games
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+[RANDOM    ] |██████████████████████████████| Solved 858/1000 (100.0%) Elapsed  111.6s ETA    0.0s
+  ✓ Completed: 858/1000 solved
+    Avg time: 1333.67ms
+    Avg guesses: 4.81
+
+Testing FREQUENCY (parallel)...
+  → Spawning 12 worker(s) for 1000 games
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+[FREQUENCY ] |██████████████████████████████| Solved 914/1000 (100.0%) Elapsed  153.5s ETA    0.0s
+  ✓ Completed: 914/1000 solved
+    Avg time: 1828.69ms
+    Avg guesses: 4.49
+
+Testing ENTROPY (parallel)...
+  → Spawning 12 worker(s) for 1000 games
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+[ENTROPY   ] |██████████████████████████████| Solved 914/1000 (100.0%) Elapsed  103.7s ETA    0.0s
+  ✓ Completed: 914/1000 solved
+    Avg time: 1238.11ms
+    Avg guesses: 4.35
+
+Testing K_BEAM (parallel)...
+  → Spawning 12 worker(s) for 1000 games
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+✅ Loaded feedback matrix from feedback_matrix.npy
+[K_BEAM    ] |██████████████████████████████| Solved 957/1000 (100.0%) Elapsed  128.5s ETA    0.0s
+  ✓ Completed: 957/1000 solved
+    Avg time: 1535.88ms
+    Avg guesses: 4.39
+
+================================================================================
+RESULTS SUMMARY
+================================================================================
+Strategy             Avg Time     Avg Memory   Avg Guesses  Success Rate
+--------------------------------------------------------------------------------
+better_entropy        4695.39ms      2.01MB        4.20      100.00%
+random                1333.67ms      0.66MB        4.81       85.80%
+frequency             1828.69ms      0.52MB        4.49       91.40%
+entropy               1238.11ms      1.02MB        4.35       91.40%
+k_beam                1535.88ms      1.11MB        4.39       95.70%
+
+Performance charts saved to: tests/performance_charts.html
+
+================================================================================
+INSIGHTS & ANALYSIS
+================================================================================
+
+Best Performers:
+  Fastest: entropy (1238.11ms avg)
+  Most Memory Efficient: frequency (0.52MB avg)
+  Fewest Guesses: better_entropy (4.20 avg)
+  Highest Success: better_entropy (100.0%)
+
+Key Observations:
+  • The fastest algorithm is 3.8x faster than the slowest
+  • Guess count ranges from 4.20 to 4.81 attempts
+  • Significant variation in success rates (85.8% - 100.0%)
+
+📋 Strategy Analysis:
+
+  BETTER_ENTROPY:
+    Good efficiency (4.20 avg guesses)
+    Very reliable (100.0% success)
+
+  RANDOM:
+    Good efficiency (4.81 avg guesses)
+    Reliable (85.8% success)
+    Failed on 142 words: CLOTE, CADES, SCREE, RAPED, KAIKS
+
+  FREQUENCY:
+    Good efficiency (4.49 avg guesses)
+    Reliable (91.4% success)
+    Failed on 86 words: SHAWS, RAPED, KAIKS, MURRS, TATES
+
+  ENTROPY:
+    Good efficiency (4.35 avg guesses)
+    Reliable (91.4% success)
+    Failed on 86 words: RAPED, PLAPS, TATES, NAVEL, WUDDY
+
+  K_BEAM:
+    Good efficiency (4.39 avg guesses)
+    Very reliable (95.7% success)
+    Failed on 43 words: RAPED, PLAPS, JUKED, HALES, WUDDY
+
+================================================================================
+PASSED
+
+=========================================================================================== 1 passed in 889.79s (0:14:49) ============================================================================================

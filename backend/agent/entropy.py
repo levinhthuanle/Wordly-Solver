@@ -1,7 +1,8 @@
+from typing import Dict, List, Sequence
+
+import numpy as np
+
 from . import Agent
-import math
-from pathlib import Path
-from typing import List, Sequence
 from schema.solve_request import GuessFeedback, SolveParameters, SolveRequest
 from schema.solve_response import AgentThought, SolveResponse
 
@@ -12,6 +13,9 @@ class EntropyAgent(Agent):
     def __init__(self) -> None:
         super().__init__()
         self.first_guess = "ROATE"
+        self._pattern_space = 3**5
+        self._batch_size = 128
+
     """Agent implementation powering Wordly solving endpoints."""
 
     def solve(self, request: SolveRequest) -> SolveResponse:
@@ -70,10 +74,7 @@ class EntropyAgent(Agent):
         if len(candidates) <= 2:
             return list(candidates)
 
-        entropy_scores = {
-            candidate: self._calculate_entropy(candidate, candidates)
-            for candidate in candidates
-        }
+        entropy_scores = self._batched_entropy_scores(candidates, candidates)
 
         ranked = sorted(
             candidates,
@@ -87,26 +88,54 @@ class EntropyAgent(Agent):
 
         return ranked
 
-    def _calculate_entropy(self, guess: str, candidates: Sequence[str]) -> float:
-        """Calculate information entropy for a guess."""
-        pattern_counts: dict[str, int] = {}
-        for target in candidates:
-            pattern = self._get_pattern(guess, target)
-            pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
+    def _batched_entropy_scores(
+        self,
+        guesses: Sequence[str],
+        candidates: Sequence[str],
+    ) -> Dict[str, float]:
+        guess_list = [word.upper() for word in guesses]
+        candidate_list = [word.upper() for word in candidates]
+        if not guess_list or not candidate_list:
+            return {word: 0.0 for word in guess_list}
 
-        total = len(candidates)
-        entropy = 0.0
-        for count in pattern_counts.values():
-            probability = count / total
-            entropy -= probability * math.log2(probability)
-        
-        # Slight penalty for duplicate letters
-        unique_letters = len(set(guess))
-        if unique_letters < 5:
-            duplicate_penalty = (5 - unique_letters) * 0.05
-            entropy -= duplicate_penalty
-        
+        guess_indices = self._word_manager.words_to_indices(guess_list)
+        candidate_indices = self._word_manager.words_to_indices(candidate_list)
+
+        scores: Dict[str, float] = {}
+        for start in range(0, len(guess_list), self._batch_size):
+            chunk_words = guess_list[start : start + self._batch_size]
+            chunk_indices = guess_indices[start : start + self._batch_size]
+            codes = self._word_manager.feedback_codes(chunk_indices, candidate_indices)
+            entropies = self._entropy_from_codes(codes)
+            for word, entropy in zip(chunk_words, entropies):
+                scores[word] = entropy - self._duplicate_penalty(word)
+
+        return scores
+
+    def _entropy_from_codes(self, codes: np.ndarray) -> np.ndarray:
+        if codes.size == 0:
+            return np.zeros(codes.shape[0])
+
+        num_rows = codes.shape[0]
+        offsets = (np.arange(num_rows, dtype=np.int64) * self._pattern_space)[:, None]
+        flattened = codes.astype(np.int64, copy=False) + offsets
+        hist = np.bincount(flattened.ravel(), minlength=num_rows * self._pattern_space).reshape(
+            num_rows, self._pattern_space
+        )
+        hist = hist.astype(np.float64, copy=False)
+
+        totals = hist.sum(axis=1, keepdims=True)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            probs = np.divide(hist, totals, out=np.zeros_like(hist), where=totals != 0)
+            entropy = -np.sum(np.where(probs > 0, probs * np.log2(probs), 0.0), axis=1)
         return entropy
+
+    @staticmethod
+    def _duplicate_penalty(word: str) -> float:
+        unique_letters = len(set(word))
+        if unique_letters < 5:
+            return (5 - unique_letters) * 0.05
+        return 0.0
 
     def _describe_decision(
         self,

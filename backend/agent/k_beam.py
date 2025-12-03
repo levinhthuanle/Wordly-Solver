@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import math
 from collections import Counter
-from dataclasses import dataclass
 from typing import Dict, List, Sequence
+
+import numpy as np
 
 from .base import Agent
 from schema.solve_request import GuessFeedback, SolveParameters, SolveRequest
@@ -17,6 +17,8 @@ class KBeamAgent(Agent):
         super().__init__()
         self.beam_width = beam_width
         self.first_guess = "ROATE"
+        self._pattern_space = 3**5
+        self._batch_size = 64
 
     # ------------------------------------------------------------------
     # Public API
@@ -88,9 +90,7 @@ class KBeamAgent(Agent):
         )
         beam = ordered_by_frequency[:beam_width]
 
-        entropy_scores: Dict[str, float] = {
-            word: self._calculate_entropy(word, candidates) for word in beam
-        }
+        entropy_scores = self._batched_entropy_scores(beam, candidates)
 
         ranked = sorted(
             beam,
@@ -117,17 +117,46 @@ class KBeamAgent(Agent):
             scores[word] = sum(letter_counts.get(letter, 0) for letter in unique_letters)
         return scores
 
-    def _calculate_entropy(self, guess: str, candidates: Sequence[str]) -> float:
-        pattern_counts: Dict[str, int] = {}
-        for target in candidates:
-            pattern = self._get_pattern(guess, target)
-            pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
+    def _batched_entropy_scores(
+        self,
+        guesses: Sequence[str],
+        candidates: Sequence[str],
+    ) -> Dict[str, float]:
+        if not guesses or not candidates:
+            return {word: 0.0 for word in guesses}
 
-        total = len(candidates)
-        entropy = 0.0
-        for count in pattern_counts.values():
-            probability = count / total
-            entropy -= probability * math.log2(probability)
+        guess_indices = self._word_manager.words_to_indices([word.upper() for word in guesses])
+        candidate_indices = self._word_manager.words_to_indices(
+            [word.upper() for word in candidates]
+        )
+
+        scores: Dict[str, float] = {}
+        for start in range(0, len(guesses), self._batch_size):
+            chunk_words = guesses[start : start + self._batch_size]
+            chunk_indices = guess_indices[start : start + self._batch_size]
+            codes = self._word_manager.feedback_codes(chunk_indices, candidate_indices)
+            entropies = self._entropy_from_codes(codes)
+            for word, entropy in zip(chunk_words, entropies):
+                scores[word] = float(entropy)
+
+        return scores
+
+    def _entropy_from_codes(self, codes: np.ndarray) -> np.ndarray:
+        if codes.size == 0:
+            return np.zeros(codes.shape[0])
+
+        num_rows = codes.shape[0]
+        offsets = (np.arange(num_rows, dtype=np.int64) * self._pattern_space)[:, None]
+        flattened = codes.astype(np.int64, copy=False) + offsets
+        hist = np.bincount(flattened.ravel(), minlength=num_rows * self._pattern_space).reshape(
+            num_rows, self._pattern_space
+        )
+        hist = hist.astype(np.float64, copy=False)
+
+        totals = hist.sum(axis=1, keepdims=True)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            probs = np.divide(hist, totals, out=np.zeros_like(hist), where=totals != 0)
+            entropy = -np.sum(np.where(probs > 0, probs * np.log2(probs), 0.0), axis=1)
         return entropy
 
     def _describe_decision(

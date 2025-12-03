@@ -5,7 +5,7 @@ import os
 from collections.abc import Mapping
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 
 import numpy as np
 from numpy.lib.format import open_memmap
@@ -158,6 +158,28 @@ class WordListManager:
             matrix_path, mode="r", dtype=np.uint8, shape=(word_count, word_count)
         )
         return self._feedback_matrix
+
+    # ------------------------------------------------------------------
+    # Vectorized helpers
+    # ------------------------------------------------------------------
+
+    def get_index_mapping(self) -> Dict[str, int]:
+        """Expose the internal word->index mapping (read-only)."""
+        return self._ensure_word_index()
+
+    def words_to_indices(self, words: Sequence[str]) -> np.ndarray:
+        index = self._ensure_word_index()
+        return np.array([index[word.upper()] for word in words], dtype=np.int64)
+
+    def feedback_codes(
+        self, guess_indices: Sequence[int], target_indices: Sequence[int]
+    ) -> np.ndarray:
+        matrix = self._ensure_feedback_matrix()
+        guess_idx_arr = np.asarray(list(guess_indices), dtype=np.int64)
+        target_idx_arr = np.asarray(list(target_indices), dtype=np.int64)
+        if guess_idx_arr.size == 0 or target_idx_arr.size == 0:
+            return np.empty((guess_idx_arr.size, target_idx_arr.size), dtype=np.uint8)
+        return matrix[np.ix_(guess_idx_arr, target_idx_arr)]
 
 
 # Global singleton
